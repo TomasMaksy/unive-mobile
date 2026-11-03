@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
+import { useState, type ComponentProps } from 'react';
+import { StyleSheet, TextInput } from 'react-native';
 
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 
 /** A white input with a hairline border that darkens on focus, like the website's. */
-export function TextField({ style, onFocus, onBlur, ...rest }: TextInputProps) {
+export function TextField({ style, onFocus, onBlur, ...rest }: ComponentProps<typeof TextInput>) {
   const [focused, setFocused] = useState(false);
 
   return (

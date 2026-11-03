@@ -9,7 +9,8 @@ import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import { authClient } from '@/lib/auth-client';
 
 type ScreenHeaderProps = {
-  title: string;
+  /** Leave out for just the button row, e.g. in the AI chat. */
+  title?: string;
   /** Replaces the avatar on the left, e.g. a close button. */
   left?: ReactNode;
   /** Shown on the right of the avatar row, e.g. a button. */
@@ -24,7 +25,7 @@ export function ScreenHeader({ title, left, right }: ScreenHeaderProps) {
         {left ?? <Avatar />}
         {right}
       </View>
-      <ThemedText type="subtitle">{title}</ThemedText>
+      {title && <ThemedText type="subtitle">{title}</ThemedText>}
     </View>
   );
 }

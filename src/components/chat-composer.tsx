@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { TextField } from '@/components/text-field';
@@ -13,19 +13,26 @@ export type ChatComposerProps = {
   onSend: (text: string) => void;
   onStop: () => void;
   onAttach: (source: AttachmentSource) => void;
+  /** Focus the input (and bring up the keyboard) each time this turns true. */
+  autoFocus?: boolean;
 };
 
 /**
  * Android and web fallback: a plain input and a send button. On iOS,
  * chat-composer.ios.tsx renders the SwiftUI composer instead.
  */
-export function ChatComposer({ busy, onSend, onStop }: ChatComposerProps) {
+export function ChatComposer({ busy, onSend, onStop, autoFocus }: ChatComposerProps) {
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [text, setText] = useState('');
+
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
   const canSend = text.trim().length > 0 && !busy;
 
   return (
     <View style={styles.row}>
-      <TextField style={styles.input} placeholder="Ask Unive" multiline value={text} onChangeText={setText} />
+      <TextField ref={inputRef} style={styles.input} placeholder="Ask Unive" multiline value={text} onChangeText={setText} />
       {busy ? (
         <Button label="Stop" variant="secondary" inline onPress={onStop} />
       ) : (

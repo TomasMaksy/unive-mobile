@@ -28,7 +28,7 @@ import {
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { ChatComposerProps } from '@/components/chat-composer';
 import { Colors } from '@/constants/theme';
@@ -42,11 +42,15 @@ const hasGlass = isLiquidGlassAvailable();
  * like ChatGPT's: a glass pill with +, the text and send. While typing it
  * springs open into a taller box, the text on top and the buttons below.
  */
-export function ChatComposer({ busy, onSend, onStop, onAttach }: ChatComposerProps) {
+export function ChatComposer({ busy, onSend, onStop, onAttach, autoFocus }: ChatComposerProps) {
   const textRef = useRef<TextFieldRef>(null);
   const [text, setText] = useState('');
   const [focused, setFocused] = useState(false);
   const canSend = text.trim().length > 0 && !busy;
+
+  useEffect(() => {
+    if (autoFocus) textRef.current?.focus();
+  }, [autoFocus]);
 
   function send() {
     if (!canSend) return;

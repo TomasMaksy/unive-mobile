@@ -148,6 +148,7 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
 
         <Animated.View style={[styles.panel, panelStyle]} pointerEvents={isOpen ? 'auto' : 'none'}>
           <AiChat
+            isOpen={isOpen}
             headerGesture={headerGesture}
             onClose={() => {
               Keyboard.dismiss();
