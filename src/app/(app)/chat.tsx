@@ -3,21 +3,15 @@ import { DefaultChatTransport, type UIMessage } from 'ai';
 import { randomUUID } from 'expo-crypto';
 import { fetch as expoFetch } from 'expo/fetch';
 import { useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import { authHeaders } from '@/lib/api';
 import { API_URL } from '@/lib/auth-client';
 
@@ -35,6 +29,24 @@ const transport = new DefaultChatTransport<UIMessage>({
 });
 
 export default function ChatScreen() {
+  // The app-wide safe area only knows about the notch and the home indicator.
+  // A provider inside the tab measures this screen itself, which on iOS
+  // includes the tab bar floating over its bottom edge.
+  return (
+    <SafeAreaProvider>
+      <Chat />
+    </SafeAreaProvider>
+  );
+}
+
+function Chat() {
+  const insets = useSafeAreaInsets();
+  const keyboard = useAnimatedKeyboard();
+  // Sit above the tab bar, or above the keyboard while it's open (it covers
+  // the tab bar). Runs on the UI thread, so it follows the keyboard smoothly.
+  const composerStyle = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(keyboard.height.value, insets.bottom) + Spacing.two,
+  }));
   const [chatId, setChatId] = useState(randomUUID);
   const [input, setInput] = useState('');
   const listRef = useRef<FlatList<UIMessage>>(null);
@@ -60,64 +72,63 @@ export default function ChatScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle">Chat</ThemedText>
-          {messages.length > 0 && (
-            <Button
-              label="New chat"
-              variant="secondary"
-              disabled={busy}
-              onPress={() => setChatId(randomUUID())}
-            />
-          )}
-        </View>
-
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={BottomTabInset}>
-          <FlatList
-            ref={listRef}
-            data={visible}
-            keyExtractor={(m) => m.id}
-            contentContainerStyle={styles.list}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-            ListEmptyComponent={
-              <ThemedText themeColor="textSecondary">
-                Ask anything about your applications, essays or deadlines.
-              </ThemedText>
-            }
-            renderItem={({ item }) => <Message message={item} />}
-            ListFooterComponent={
-              <>
-                {status === 'submitted' && <ActivityIndicator color={Colors.textSecondary} style={styles.thinking} />}
-                {error && (
-                  <ThemedText type="small" themeColor="destructive" style={styles.error}>
-                    {error.message || 'Something went wrong. Try again.'}
-                  </ThemedText>
-                )}
-              </>
-            }
+    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <ThemedText type="subtitle">Chat</ThemedText>
+        {messages.length > 0 && (
+          <Button
+            label="New chat"
+            variant="secondary"
+            disabled={busy}
+            onPress={() => setChatId(randomUUID())}
           />
+        )}
+      </View>
 
-          <View style={[styles.composer, { paddingBottom: BottomTabInset + Spacing.two }]}>
-            <TextField
-              style={styles.input}
-              placeholder="Message Unive"
-              multiline
-              value={input}
-              onChangeText={setInput}
-            />
-            {busy ? (
-              <Button label="Stop" variant="secondary" onPress={stop} />
-            ) : (
-              <Button label="Send" disabled={!input.trim()} onPress={send} />
+      <FlatList
+        ref={listRef}
+        data={visible}
+        keyExtractor={(m) => m.id}
+        contentContainerStyle={styles.list}
+        // The composer already keeps clear of the tab bar; iOS shouldn't pad the list for it too.
+        contentInsetAdjustmentBehavior="never"
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        // Keep the newest message in view when the keyboard opens and the list shrinks.
+        onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+        ListEmptyComponent={
+          <ThemedText themeColor="textSecondary">
+            Ask anything about your applications, essays or deadlines.
+          </ThemedText>
+        }
+        renderItem={({ item }) => <Message message={item} />}
+        ListFooterComponent={
+          <>
+            {status === 'submitted' && <ActivityIndicator color={Colors.textSecondary} style={styles.thinking} />}
+            {error && (
+              <ThemedText type="small" themeColor="destructive" style={styles.error}>
+                {error.message || 'Something went wrong. Try again.'}
+              </ThemedText>
             )}
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+          </>
+        }
+      />
+
+      <Animated.View style={[styles.composer, composerStyle]}>
+        <TextField
+          style={styles.input}
+          placeholder="Message Unive"
+          multiline
+          value={input}
+          onChangeText={setInput}
+        />
+        {busy ? (
+          <Button label="Stop" variant="secondary" onPress={stop} />
+        ) : (
+          <Button label="Send" disabled={!input.trim()} onPress={send} />
+        )}
+      </Animated.View>
     </ThemedView>
   );
 }
