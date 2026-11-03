@@ -1,7 +1,7 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 import { Platform } from 'react-native';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 
 // From iOS 26, a tab with the search role sits in its own glass circle to the
 // right of the tab bar, like Bevel's. Older iOS would show it as a regular
@@ -13,8 +13,9 @@ export default function AppTabs() {
     <NativeTabs
       tintColor={Colors.text}
       backgroundColor={Colors.background}
-      indicatorColor={Colors.backgroundSelected}
-      labelStyle={{ fontFamily: Fonts.sansMedium }}>
+      // Labels keep the system font: iOS 26's glass tab bar sizes them for it, and
+      // a taller custom font (Inter) left unselected labels low and clipped.
+      indicatorColor={Colors.backgroundSelected}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
