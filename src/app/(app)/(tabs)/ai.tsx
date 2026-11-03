@@ -3,13 +3,13 @@ import { DefaultChatTransport, type UIMessage } from 'ai';
 import { randomUUID } from 'expo-crypto';
 import { fetch as expoFetch } from 'expo/fetch';
 import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { ChatComposer } from '@/components/chat-composer';
 import { ScreenHeader } from '@/components/screen-header';
-import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Shape, Spacing } from '@/constants/theme';
@@ -49,7 +49,6 @@ function Chat() {
     paddingBottom: Math.max(keyboard.height.value, insets.bottom) + Spacing.two,
   }));
   const [chatId, setChatId] = useState(randomUUID);
-  const [input, setInput] = useState('');
   const listRef = useRef<FlatList<UIMessage>>(null);
 
   const { messages, sendMessage, status, error, stop } = useChat({
@@ -65,10 +64,8 @@ function Chat() {
     [messages],
   );
 
-  function send() {
-    const text = input.trim();
-    if (!text || busy) return;
-    setInput('');
+  function send(text: string) {
+    if (busy) return;
     sendMessage({ text, metadata: { createdAt: new Date().toISOString() } });
   }
 
@@ -119,18 +116,13 @@ function Chat() {
       />
 
       <Animated.View style={[styles.composer, composerStyle]}>
-        <TextField
-          style={styles.input}
-          placeholder="Message Unive"
-          multiline
-          value={input}
-          onChangeText={setInput}
+        <ChatComposer
+          busy={busy}
+          onSend={send}
+          onStop={stop}
+          // The backend can't receive files from the app yet (see README).
+          onAttach={() => Alert.alert('Coming soon', 'Sending photos and files to Unive AI is on its way.')}
         />
-        {busy ? (
-          <Button label="Stop" variant="secondary" onPress={stop} />
-        ) : (
-          <Button label="Send" disabled={!input.trim()} onPress={send} />
-        )}
       </Animated.View>
     </ThemedView>
   );
@@ -185,18 +177,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
-  },
-  input: {
-    // Squircle rather than a pill, so it still looks right when it grows to several lines.
-    ...Shape.bubble,
-    flex: 1,
-    maxHeight: 140,
-    paddingTop: 13,
-    paddingBottom: 13,
   },
 });

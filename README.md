@@ -6,7 +6,7 @@ A prototype of the unive mobile app (iOS and Android), built with Expo. The web 
 
 - **Sign in** with an emailed code, the same login as the website.
 - **Tabs:** Home, Apps (applications), Essay and Study are empty for now. On iOS 26+, **AI** sits in its own glass circle to the right of the tab bar (a tab with the search role); on older iOS it's a regular tab.
-- **AI:** the unive AI assistant (the website's global chat), with streamed replies. Chats are saved by the backend like the website's, so they show up in the website's chat history for the same account and backend.
+- **AI:** the unive AI assistant, with a ChatGPT-style composer built from Apple's own SwiftUI views via `@expo/ui` ([src/components/chat-composer.tsx](src/components/chat-composer.tsx)): a glass pill that springs open while you type (the website's global chat), with streamed replies. Chats are saved by the backend like the website's, so they show up in the website's chat history for the same account and backend.
 - **Profile:** your avatar at the top left of every tab opens it (who's signed in, and sign out).
 
 A **Today** screen (the admissions action plan from `/api/admissions/action-plan`) is built but hidden, because the website doesn't show the action plan yet. Its code is in [src/features/today](src/features/today). While it was visible, opening it generated a plan for the account if none existed.
@@ -60,7 +60,9 @@ EXPO_PUBLIC_API_URL=https://your-preview.vercel.app npx expo start --clear
 ## Known limits of the prototype
 
 - **Sign-out only happens on the device.** better-auth rejects the sign-out request without its `expo()` server plugin, so the server session lasts until it expires. Fix: add `expo()` and `trustedOrigins: ["unive://"]` in `unive-v22/src/lib/auth/server.ts`. Never trust `exp://` in production: with magic links enabled, an attacker could get a user's session sent to their own machine.
-- **Chat shows text only.** Tool cards (open a page, ask for input) aren't rendered yet.
+- **Chat shows text only.** Tool cards (open a page, ask for input) and Markdown aren't rendered yet.
+- **Attachments say "coming soon".** The composer's + menu (Camera, Photos, Files) is in place, but the app can't send files yet: the website's upload is switched off (`files-button.tsx`), and its upload is a Next.js server action the app can't call. It needs an upload API route in unive-v22.
+- **No mic button.** Speech recognition isn't in Expo Go; it needs our own development build. The iPhone keyboard's dictation works meanwhile.
 - **Only accounts with access can sign in**, the same as on the website.
 - **The app icon is still Expo's placeholder.** It needs a square 1024×1024 source with no transparency (the website's `unive-app-icon.png` has a shadow baked in). Expo Go shows its own icon anyway, so this matters only for a real build.
 
