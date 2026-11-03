@@ -15,6 +15,7 @@ import type { IconButtonProps } from '@/components/icon-button';
 import { Colors } from '@/constants/theme';
 
 const glass = isLiquidGlassAvailable();
+export const SIZE = 44;
 
 /**
  * A round native button with an SF Symbol: glass with the system's bounce on
@@ -31,6 +32,8 @@ export function IconButton({ systemImage, accessibilityLabel, onPress }: IconBut
           buttonStyle(glass ? 'glass' : 'bordered'),
           buttonBorderShape('circle'),
           controlSize('regular'),
+          // iOS pads a bordered button's sides, so it'd be wider than its circle; keep it square.
+          frame({ width: SIZE, height: SIZE }),
           accessibilityLabelModifier(accessibilityLabel),
         ]}>
         <Image

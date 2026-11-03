@@ -16,6 +16,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 import { IconButton } from '@/components/icon-button';
+import { SIZE } from '@/components/icon-button.ios';
 import { Colors, Spacing } from '@/constants/theme';
 import type { ChatActionsProps } from '@/features/ai/chat-actions';
 
@@ -44,6 +45,8 @@ export function ChatActions({ canStartNew, onNewChat, history, currentChatId, on
               buttonStyle(glass ? 'glass' : 'bordered'),
               buttonBorderShape('circle'),
               controlSize('regular'),
+              // Square, like IconButton, so it lines up with the screen edge.
+              frame({ width: SIZE, height: SIZE }),
               menuOrder('fixed'),
               accessibilityLabel('Chat history'),
             ]}
