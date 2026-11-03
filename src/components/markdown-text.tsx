@@ -125,4 +125,33 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginVertical: Spacing.three,
   },
+  // Tables: a white squircle card with hairline rows, like the website's.
+  table: {
+    ...Shape.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundElement,
+    overflow: 'hidden',
+    marginBottom: Spacing.three,
+  },
+  thead: {
+    backgroundColor: Colors.backgroundSelected,
+  },
+  tr: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.border,
+  },
+  // Smaller text and tighter cells, so words in narrow columns don't break mid-word.
+  th: {
+    paddingHorizontal: 10,
+    paddingVertical: Spacing.two,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  td: {
+    paddingHorizontal: 10,
+    paddingVertical: Spacing.two,
+    fontSize: 14,
+    lineHeight: 20,
+  },
 }) as MarkdownStyleMap;
