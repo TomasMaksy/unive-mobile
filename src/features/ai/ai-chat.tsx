@@ -43,6 +43,9 @@ const transport = new DefaultChatTransport<UIMessage>({
 // Unive's olive (Colors.olive), at the strength the glow under the input starts from.
 const GLOW = 'rgba(111, 118, 68, 0.3)';
 const CLEAR = 'rgba(111, 118, 68, 0)';
+// Colors.background, solid and see-through, for the fades at the top and bottom.
+const BACKGROUND = 'rgba(249, 249, 247, 1)';
+const BACKGROUND_CLEAR = 'rgba(249, 249, 247, 0)';
 
 type AiChatProps = {
   /** The panel is on screen: a good moment to pick up chats started on the website. */
@@ -61,10 +64,26 @@ type AiChatProps = {
 export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiChatProps) {
   const insets = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard();
+  // The messages fill the whole screen and scroll under the header and the input,
+  // which float on top; these are their measured heights, to keep the first and
+  // last message clear of them.
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 48);
+  const [composerHeight, setComposerHeight] = useState(56);
   // Sit above the home indicator, or above the keyboard while it's open.
   // Runs on the UI thread, so it follows the keyboard smoothly.
   const composerStyle = useAnimatedStyle(() => ({
     paddingBottom: Math.max(keyboard.height.value, insets.bottom) + Spacing.two,
+  }));
+  // The list ends at the keyboard; below the last message, room for the input.
+  const listStyle = useAnimatedStyle(() => ({
+    bottom: keyboard.height.value,
+  }));
+  const listEndStyle = useAnimatedStyle(() => ({
+    height: composerHeight + Spacing.four + Math.max(insets.bottom - keyboard.height.value, 0),
+  }));
+  // Messages fade out under the input rather than stopping at a hard edge.
+  const bottomFadeStyle = useAnimatedStyle(() => ({
+    height: Math.max(keyboard.height.value, insets.bottom) + Spacing.two + composerHeight + Spacing.five,
   }));
   // The olive glow rises from just under the composer, so it rides up with the keyboard too.
   const glowStyle = useAnimatedStyle(() => ({
@@ -148,30 +167,19 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiCh
   }
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <GestureDetector gesture={headerGesture}>
-        <View>
-          <ScreenHeader
-            left={<IconButton systemImage="chevron.up" accessibilityLabel="Close AI" onPress={onClose} />}
-            right={
-              <ChatActions
-                canStartNew={messages.length > 0}
-                onNewChat={startNewChat}
-                history={history}
-                currentChatId={chat.id}
-                onOpenChat={openChat}
-              />
-            }
-          />
-        </View>
-      </GestureDetector>
-
-      <FlatList
+    <ThemedView style={styles.container}>
+      <Animated.FlatList
         ref={listRef}
+        style={[StyleSheet.absoluteFill, listStyle]}
         data={visible}
         keyExtractor={(m) => m.id}
-        contentContainerStyle={[styles.list, visible.length === 0 && styles.listEmpty]}
-        // The composer keeps clear of the bottom edge; iOS shouldn't pad the list for it too.
+        contentContainerStyle={[
+          styles.list,
+          { paddingTop: headerHeight + Spacing.two },
+          visible.length === 0 && styles.listEmpty,
+        ]}
+        scrollIndicatorInsets={{ top: headerHeight, bottom: composerHeight + Spacing.two }}
+        // The header and input float over the list; it keeps clear of them itself.
         contentInsetAdjustmentBehavior="never"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
@@ -206,9 +214,33 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiCh
                 {error.message || 'Something went wrong. Try again.'}
               </ThemedText>
             )}
+            <Animated.View style={listEndStyle} />
           </>
         }
       />
+
+      {/* Like Claude's and ChatGPT's apps: messages slide under the header and the input, getting fainter, instead of being cut off. */}
+      <View pointerEvents="none" style={[styles.topFade, { height: headerHeight + Spacing.four }]} />
+      <Animated.View pointerEvents="none" style={[styles.bottomFade, bottomFadeStyle]} />
+
+      <GestureDetector gesture={headerGesture}>
+        <View
+          style={[styles.header, { paddingTop: insets.top }]}
+          onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+          <ScreenHeader
+            left={<IconButton systemImage="chevron.up" accessibilityLabel="Close AI" onPress={onClose} />}
+            right={
+              <ChatActions
+                canStartNew={messages.length > 0}
+                onNewChat={startNewChat}
+                history={history}
+                currentChatId={chat.id}
+                onOpenChat={openChat}
+              />
+            }
+          />
+        </View>
+      </GestureDetector>
 
       <Animated.View pointerEvents="none" style={[styles.glow, glowStyle, glowFadeStyle]}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.glowToEdge, keyboardHidden]} />
@@ -216,15 +248,17 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiCh
       </Animated.View>
       <GestureDetector gesture={composerGesture}>
         <Animated.View style={[styles.composer, composerStyle]}>
-          <ChatComposer
-            // Opening the AI goes straight to typing, keyboard up.
-            autoFocus={isOpen}
-            busy={busy}
-            onSend={send}
-            onStop={stop}
-            // The backend can't receive files from the app yet (see README).
-            onAttach={() => Alert.alert('Coming soon', 'Sending photos and files to Unive AI is on its way.')}
-          />
+          <View onLayout={(e) => setComposerHeight(e.nativeEvent.layout.height)}>
+            <ChatComposer
+              // Opening the AI goes straight to typing, keyboard up.
+              autoFocus={isOpen}
+              busy={busy}
+              onSend={send}
+              onStop={stop}
+              // The backend can't receive files from the app yet (see README).
+              onAttach={() => Alert.alert('Coming soon', 'Sending photos and files to Unive AI is on its way.')}
+            />
+          </View>
         </Animated.View>
       </GestureDetector>
     </ThemedView>
@@ -307,7 +341,31 @@ const styles = StyleSheet.create({
   glowAboveKeyboard: {
     experimental_backgroundImage: `linear-gradient(0deg, ${CLEAR}, ${GLOW} 40%, ${CLEAR})`,
   },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    experimental_backgroundImage: `linear-gradient(180deg, ${BACKGROUND} 15%, ${BACKGROUND_CLEAR})`,
+  },
+  bottomFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    experimental_backgroundImage: `linear-gradient(0deg, ${BACKGROUND} 25%, ${BACKGROUND_CLEAR})`,
+  },
   composer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
   },
