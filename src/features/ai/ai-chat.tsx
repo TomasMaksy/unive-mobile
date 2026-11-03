@@ -33,19 +33,24 @@ const transport = new DefaultChatTransport<UIMessage>({
   }),
 });
 
+// Unive's olive (Colors.olive), at the strength the glow under the input starts from.
+const GLOW = 'rgba(111, 118, 68, 0.3)';
+
 type AiChatProps = {
   /** The panel is on screen: a good moment to pick up chats started on the website. */
   isOpen: boolean;
   onClose: () => void;
   /** Dragging the header up closes the panel the chat lives in (see ai-panel.tsx). */
   headerGesture: PanGesture;
+  /** ...and so does grabbing the input and dragging it up. */
+  composerGesture: PanGesture;
 };
 
 /**
  * The unive AI chat. It lives in the panel you pull down from the top of any
  * tab, which covers the whole screen, so the app-wide safe area applies.
  */
-export function AiChat({ isOpen, onClose, headerGesture }: AiChatProps) {
+export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiChatProps) {
   const insets = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard();
   // Sit above the home indicator, or above the keyboard while it's open.
@@ -53,9 +58,13 @@ export function AiChat({ isOpen, onClose, headerGesture }: AiChatProps) {
   const composerStyle = useAnimatedStyle(() => ({
     paddingBottom: Math.max(keyboard.height.value, insets.bottom) + Spacing.two,
   }));
-  // The olive glow rises from just under the composer, so it rides up with the keyboard too.
+  // The olive glow rises from just under the composer, so it rides up with the keyboard too,
+  // and the same olive carries on behind the keyboard: no edge where its rounded corners are.
   const glowStyle = useAnimatedStyle(() => ({
     bottom: keyboard.height.value,
+  }));
+  const underKeyboardStyle = useAnimatedStyle(() => ({
+    height: keyboard.height.value,
   }));
   const { data: session } = authClient.useSession();
   const firstName = session?.user.name?.trim().split(/\s+/)[0];
@@ -182,17 +191,20 @@ export function AiChat({ isOpen, onClose, headerGesture }: AiChatProps) {
       />
 
       <Animated.View pointerEvents="none" style={[styles.glow, glowStyle]} />
-      <Animated.View style={[styles.composer, composerStyle]}>
-        <ChatComposer
-          // Opening the AI goes straight to typing, keyboard up.
-          autoFocus={isOpen}
-          busy={busy}
-          onSend={send}
-          onStop={stop}
-          // The backend can't receive files from the app yet (see README).
-          onAttach={() => Alert.alert('Coming soon', 'Sending photos and files to Unive AI is on its way.')}
-        />
-      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.underKeyboard, underKeyboardStyle]} />
+      <GestureDetector gesture={composerGesture}>
+        <Animated.View style={[styles.composer, composerStyle]}>
+          <ChatComposer
+            // Opening the AI goes straight to typing, keyboard up.
+            autoFocus={isOpen}
+            busy={busy}
+            onSend={send}
+            onStop={stop}
+            // The backend can't receive files from the app yet (see README).
+            onAttach={() => Alert.alert('Coming soon', 'Sending photos and files to Unive AI is on its way.')}
+          />
+        </Animated.View>
+      </GestureDetector>
     </ThemedView>
   );
 }
@@ -261,13 +273,20 @@ const styles = StyleSheet.create({
   error: {
     marginTop: Spacing.two,
   },
+  underKeyboard: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: GLOW,
+  },
   glow: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 260,
     // The same olive as the pull-down gradient (ai-panel.tsx), here coming up from the bottom.
-    experimental_backgroundImage: 'linear-gradient(0deg, rgba(111, 118, 68, 0.3), rgba(111, 118, 68, 0))',
+    experimental_backgroundImage: `linear-gradient(0deg, ${GLOW}, rgba(111, 118, 68, 0))`,
   },
   composer: {
     paddingHorizontal: Spacing.three,

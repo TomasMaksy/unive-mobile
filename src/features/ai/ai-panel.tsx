@@ -41,8 +41,8 @@ const AiPanelContext = createContext<AiPanelContextValue | null>(null);
  * The AI lives above the tabs, like Revolut's. Pulling down from the top of
  * any tab grows a gradient from the notch and a "Swipe to ask AI" hint, with
  * a haptic tick once letting go will open it; only on release does the AI
- * take over the screen. Drag its header up, flick it, or tap the chevron to
- * send it back.
+ * take over the screen. Drag its header or its input up, flick it, or tap the
+ * chevron to send it back.
  */
 export function AiPanelProvider({ children }: { children: ReactNode }) {
   const { height } = useWindowDimensions();
@@ -85,26 +85,41 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
     },
   );
 
-  // Dragging the header up sends the panel back; a quick flick is enough (velocity decides, not distance).
+  // Dragging the panel up sends it back; a quick flick is enough (velocity decides, not distance).
+  function startDrag() {
+    'worklet';
+    dragStart.set(dragY.get());
+  }
+  function drag(e: { translationY: number }) {
+    'worklet';
+    const next = dragStart.get() + e.translationY;
+    // Up follows the finger; down resists.
+    dragY.set(next <= 0 ? next : rubberband(next, height));
+  }
+  function endDrag(e: { velocityY: number }) {
+    'worklet';
+    const projected = dragY.get() + project(e.velocityY);
+    if (projected < -height * 0.25) {
+      close();
+      scheduleOnRN(dismissKeyboard);
+    } else {
+      dragY.set(withSpring(0, { duration: 300, dampingRatio: 1, velocity: e.velocityY }));
+    }
+  }
+  // By the header, either way.
   const headerGesture = usePanGesture({
     activeOffsetY: [-10, 10],
-    onActivate: () => {
-      dragStart.set(dragY.get());
-    },
-    onUpdate: (e) => {
-      const next = dragStart.get() + e.translationY;
-      // Up follows the finger; down resists.
-      dragY.set(next <= 0 ? next : rubberband(next, height));
-    },
-    onDeactivate: (e) => {
-      const projected = dragY.get() + project(e.velocityY);
-      if (projected < -height * 0.25) {
-        close();
-        scheduleOnRN(dismissKeyboard);
-      } else {
-        dragY.set(withSpring(0, { duration: 300, dampingRatio: 1, velocity: e.velocityY }));
-      }
-    },
+    onActivate: startDrag,
+    onUpdate: drag,
+    onDeactivate: endDrag,
+  });
+  // By the input, only upwards, so taps and typing still reach it.
+  const composerGesture = usePanGesture({
+    activeOffsetY: -10,
+    failOffsetY: 10,
+    onActivate: startDrag,
+    onUpdate: drag,
+    onDeactivate: endDrag,
   });
 
   // While pulling: a gradient grows down from the notch with the pull.
@@ -150,6 +165,7 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
           <AiChat
             isOpen={isOpen}
             headerGesture={headerGesture}
+            composerGesture={composerGesture}
             onClose={() => {
               Keyboard.dismiss();
               close();
