@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/icon-button';
@@ -17,13 +17,19 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { data: session } = authClient.useSession();
+  // unive-v2 keeps the last name in its own field (lastName, see src/lib/auth/server.ts there).
+  const lastName = (session?.user as { lastName?: string | null } | undefined)?.lastName;
+  const fullName = [session?.user.name, lastName].filter(Boolean).join(' ');
 
   return (
     <ThemedView style={styles.container}>
       <ProfileList
-        name={session?.user.name ?? ''}
+        name={fullName}
         email={session?.user.email ?? ''}
         backend={__DEV__ ? API_URL : undefined}
+        // Needs the invite link from the backend, which the app can't get yet.
+        onInvite={() => Alert.alert('Coming soon', 'Inviting friends from the app is on its way.')}
+        onOpen={(screen) => router.push(`/${screen}`)}
         onSignOut={signOut}
       />
       <View style={[styles.close, { top: insets.top + Spacing.two }]}>
