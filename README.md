@@ -71,6 +71,7 @@ EXPO_PUBLIC_API_URL=https://your-preview.vercel.app npx expo start --clear
 Use these instead of hand-made controls, so the app feels like iOS:
 
 - [`Button`](src/components/button.ios.tsx): a real SwiftUI button. Glass styles with the system's bouncy press on iOS 26, classic filled/bordered before that. `button.tsx` is the Android/web fallback.
+- [`IconButton`](src/components/icon-button.ios.tsx): a round native button with an SF Symbol (glass on iOS 26), e.g. Profile's close button.
 - [`PressableScale`](src/components/pressable-scale.tsx): press feedback for custom tappable things (avatars, cards): a quick shrink and a slight spring back, optional haptic. From Expo's press-feedback recipe.
 - SwiftUI-only code lives in `.ios.tsx` files with a fallback next to it, because `@expo/ui/swift-ui` crashes on Android.
 

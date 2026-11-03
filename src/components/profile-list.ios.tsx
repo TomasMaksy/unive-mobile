@@ -9,6 +9,7 @@ import {
   listRowBackground,
   listStyle,
   multilineTextAlignment,
+  padding,
   scrollContentBackground,
 } from '@expo/ui/swift-ui/modifiers';
 
@@ -26,7 +27,7 @@ export function ProfileList({ name, email, backend, onSignOut }: ProfileListProp
     <Host style={{ flex: 1 }} colorScheme="light">
       <List modifiers={[listStyle('insetGrouped'), scrollContentBackground('hidden'), background(Colors.background)]}>
         <Section modifiers={[listRowBackground('#00000000')]}>
-          <VStack spacing={6} modifiers={[frame({ maxWidth: 10000 })]}>
+          <VStack spacing={6} modifiers={[frame({ maxWidth: 10000 }), padding({ top: 28 })]}>
             <ZStack
               modifiers={[
                 frame({ width: 88, height: 88 }),
