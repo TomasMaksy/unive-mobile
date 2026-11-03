@@ -5,8 +5,9 @@ A prototype of the unive mobile app (iOS and Android), built with Expo. The web 
 ## What it does
 
 - **Sign in** with an emailed code, the same login as the website.
-- **Chat:** the unive AI assistant (the website's global chat), with streamed replies. Chats are saved by the backend like the website's, so they show up in the website's chat history for the same account and backend.
-- **Account:** who's signed in, and sign out.
+- **Tabs:** Home, Apps (applications), Essay and Study are empty for now. On iOS 26+, **AI** sits in its own glass circle to the right of the tab bar (a tab with the search role); on older iOS it's a regular tab.
+- **AI:** the unive AI assistant (the website's global chat), with streamed replies. Chats are saved by the backend like the website's, so they show up in the website's chat history for the same account and backend.
+- **Profile:** your avatar at the top left of every tab opens it (who's signed in, and sign out).
 
 A **Today** screen (the admissions action plan from `/api/admissions/action-plan`) is built but hidden, because the website doesn't show the action plan yet. Its code is in [src/features/today](src/features/today). While it was visible, opening it generated a plan for the account if none existed.
 

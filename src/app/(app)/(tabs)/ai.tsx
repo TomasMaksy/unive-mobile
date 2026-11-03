@@ -8,6 +8,7 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-re
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { ScreenHeader } from '@/components/screen-header';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -73,17 +74,19 @@ function Chat() {
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <ThemedText type="subtitle">Chat</ThemedText>
-        {messages.length > 0 && (
-          <Button
-            label="New chat"
-            variant="secondary"
-            disabled={busy}
-            onPress={() => setChatId(randomUUID())}
-          />
-        )}
-      </View>
+      <ScreenHeader
+        title="AI"
+        right={
+          messages.length > 0 && (
+            <Button
+              label="New chat"
+              variant="secondary"
+              disabled={busy}
+              onPress={() => setChatId(randomUUID())}
+            />
+          )
+        }
+      />
 
       <FlatList
         ref={listRef}
@@ -154,13 +157,6 @@ function Message({ message }: { message: UIMessage }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
   },
   list: {
     gap: Spacing.four,
