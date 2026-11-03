@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { authClient, signOutOnDevice } from '@/lib/auth-client';
+import { API_URL, authClient, signOutOnDevice } from '@/lib/auth-client';
 
 export default function SignInScreen() {
   const theme = useTheme();
@@ -66,6 +66,13 @@ export default function SignInScreen() {
               ? 'Use the email of your unive account. We’ll send you a code.'
               : `Enter the code we sent to ${email.trim()}.`}
           </ThemedText>
+          {__DEV__ && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {API_URL.startsWith('http://localhost')
+                ? `Local backend (${API_URL}): the code is printed as [OTP] in the terminal running bun dev.`
+                : `Backend: ${API_URL}. Codes are sent by real email.`}
+            </ThemedText>
+          )}
 
           {step === 'email' ? (
             <TextInput

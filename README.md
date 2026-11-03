@@ -9,23 +9,50 @@ A prototype of the unive mobile app (iOS and Android), built with Expo. The web 
 - **Chat:** the unive AI assistant (the website's global chat), with streamed replies.
 - **Account:** who's signed in, and sign out.
 
-It talks to the live unive-v2 API at `https://unive.ai`, and needs **no backend changes**.
+It has no backend of its own: it calls the unive-v2 API, and needs **no backend changes**.
 
-## Run it on your phone
+## Which backend?
 
-1. Install **Expo Go** from the App Store or Play Store.
-2. In this folder:
-   ```bash
-   npm install
-   npx expo start
-   ```
-3. Scan the QR code with your phone's camera (iOS) or the Expo Go app (Android). The phone and computer need to be on the same Wi-Fi.
+The app holds no secrets (anyone can unpack a phone app), so it doesn't use unive-v2's `.env.local`. Its only setting is `EXPO_PUBLIC_API_URL`, the backend it talks to. It's built into the app when Metro bundles it, like `NEXT_PUBLIC_` in Next.js. Without it, the app uses production.
 
-To point the app at another server, such as a Vercel preview, set `EXPO_PUBLIC_API_URL`:
+| Command | Backend | Sign-in code |
+| --- | --- | --- |
+| `npm run dev` | your laptop, `http://localhost:3000` | printed as `[OTP]` in the same terminal |
+| `npm run prod` | `https://unive.ai`, real users and data | real email |
+
+In development the sign-in screen says which backend it's using.
+
+## Develop against your laptop (start here)
 
 ```bash
-EXPO_PUBLIC_API_URL=https://your-preview.vercel.app npx expo start
+npm install
+npm run dev
 ```
+
+[`scripts/dev.sh`](scripts/dev.sh) does three things:
+
+1. Starts unive-v2 with its own `bun dev` in `../unive-v22` (docker + Next.js on port 3000). If it's already running, it uses that instead.
+2. Waits until the backend answers.
+3. Opens the iOS Simulator with Expo Go and loads the app from Metro on your Mac.
+
+Sign in with the email of an account in your local database and the `[OTP]` code printed in the same terminal. `@unive.ai` emails always have access. Ctrl+C stops the app and the backend it started.
+
+`localhost` works only in the iOS Simulator, which runs on your Mac. On a real phone, `localhost` is the phone itself.
+
+Press `r` in the Metro terminal to reload the app, and `i` to reopen the simulator.
+
+## Run it on your phone (production backend)
+
+1. Install **Expo Go** from the App Store or Play Store.
+2. Run `npm run prod` and scan the QR code with your phone's camera (iOS) or the Expo Go app (Android). The phone and computer need to be on the same Wi-Fi.
+
+To use another server, such as a Vercel preview, set the URL yourself:
+
+```bash
+EXPO_PUBLIC_API_URL=https://your-preview.vercel.app npx expo start --clear
+```
+
+`--clear` matters: Metro caches the bundle, and without it the app may keep the old URL.
 
 ## Known limits of the prototype
 
