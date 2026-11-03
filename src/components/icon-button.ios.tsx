@@ -22,7 +22,8 @@ const glass = isLiquidGlassAvailable();
  */
 export function IconButton({ systemImage, accessibilityLabel, onPress }: IconButtonProps) {
   return (
-    <Host matchContents>
+    // React Native places this; SwiftUI shouldn't add safe-area spacing of its own.
+    <Host matchContents ignoreSafeArea="all">
       <Button
         onPress={onPress}
         modifiers={[

@@ -4,11 +4,13 @@ import { randomUUID } from 'expo-crypto';
 import { fetch as expoFetch } from 'expo/fetch';
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
+import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { ChatComposer } from '@/components/chat-composer';
+import { IconButton } from '@/components/icon-button';
 import { MarkdownText } from '@/components/markdown-text';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
@@ -30,22 +32,21 @@ const transport = new DefaultChatTransport<UIMessage>({
   }),
 });
 
-export default function ChatScreen() {
-  // The app-wide safe area only knows about the notch and the home indicator.
-  // A provider inside the tab measures this screen itself, which on iOS
-  // includes the tab bar floating over its bottom edge.
-  return (
-    <SafeAreaProvider>
-      <Chat />
-    </SafeAreaProvider>
-  );
-}
+type AiChatProps = {
+  onClose: () => void;
+  /** Dragging the header up closes the panel the chat lives in (see ai-panel.tsx). */
+  headerGesture: PanGesture;
+};
 
-function Chat() {
+/**
+ * The unive AI chat. It lives in the panel you pull down from the top of any
+ * tab, which covers the whole screen, so the app-wide safe area applies.
+ */
+export function AiChat({ onClose, headerGesture }: AiChatProps) {
   const insets = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard();
-  // Sit above the tab bar, or above the keyboard while it's open (it covers
-  // the tab bar). Runs on the UI thread, so it follows the keyboard smoothly.
+  // Sit above the home indicator, or above the keyboard while it's open.
+  // Runs on the UI thread, so it follows the keyboard smoothly.
   const composerStyle = useAnimatedStyle(() => ({
     paddingBottom: Math.max(keyboard.height.value, insets.bottom) + Spacing.two,
   }));
@@ -72,27 +73,32 @@ function Chat() {
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <ScreenHeader
-        title="AI"
-        right={
-          messages.length > 0 && (
-            <Button
-              label="New chat"
-              variant="secondary"
-              inline
-              disabled={busy}
-              onPress={() => setChatId(randomUUID())}
-            />
-          )
-        }
-      />
+      <GestureDetector gesture={headerGesture}>
+        <View>
+          <ScreenHeader
+            title="AI"
+            left={<IconButton systemImage="chevron.up" accessibilityLabel="Close AI" onPress={onClose} />}
+            right={
+              messages.length > 0 && (
+                <Button
+                  label="New chat"
+                  variant="secondary"
+                  inline
+                  disabled={busy}
+                  onPress={() => setChatId(randomUUID())}
+                />
+              )
+            }
+          />
+        </View>
+      </GestureDetector>
 
       <FlatList
         ref={listRef}
         data={visible}
         keyExtractor={(m) => m.id}
         contentContainerStyle={styles.list}
-        // The composer already keeps clear of the tab bar; iOS shouldn't pad the list for it too.
+        // The composer keeps clear of the bottom edge; iOS shouldn't pad the list for it too.
         contentInsetAdjustmentBehavior="never"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"

@@ -5,8 +5,8 @@ A prototype of the unive mobile app (iOS and Android), built with Expo. The web 
 ## What it does
 
 - **Sign in** with an emailed code, the same login as the website.
-- **Tabs:** Home, Apps (applications), Essay and Study are empty for now. On iOS 26+, **AI** sits in its own glass circle to the right of the tab bar (a tab with the search role); on older iOS it's a regular tab.
-- **AI:** the unive AI assistant, with a ChatGPT-style composer built from Apple's own SwiftUI views via `@expo/ui` ([src/components/chat-composer.tsx](src/components/chat-composer.tsx)): a glass pill that springs open while you type (the website's global chat), with streamed replies. Chats are saved by the backend like the website's, so they show up in the website's chat history for the same account and backend.
+- **Tabs:** Home, Apps (applications), Essay and Study are empty for now.
+- **AI:** pull down from the top of any tab and the AI chat comes down after your finger, like Revolut's; a haptic tick says letting go will open it. Drag its header up, flick it, or tap the chevron to send it back ([src/features/ai](src/features/ai)). The chat is the unive AI assistant (the website's global chat) with a ChatGPT-style composer built from Apple's own SwiftUI views via `@expo/ui`. Chats are saved by the backend like the website's, so they show up in the website's chat history for the same account and backend.
 - **Profile:** your avatar at the top left of every tab zooms out into it, like Revolut (Apple's zoom transition, iOS 18+): who's signed in, and sign out, as a native grouped list.
 
 A **Today** screen (the admissions action plan from `/api/admissions/action-plan`) is built but hidden, because the website doesn't show the action plan yet. Its code is in [src/features/today](src/features/today). While it was visible, opening it generated a plan for the account if none existed.
@@ -74,6 +74,7 @@ Use these instead of hand-made controls, so the app feels like iOS:
 - [`IconButton`](src/components/icon-button.ios.tsx): a round native button with an SF Symbol (glass on iOS 26), e.g. Profile's close button.
 - [`PressableScale`](src/components/pressable-scale.tsx): press feedback for custom tappable things (avatars, cards): a quick shrink and a slight spring back, optional haptic. From Expo's press-feedback recipe.
 - SwiftUI-only code lives in `.ios.tsx` files with a fallback next to it, because `@expo/ui/swift-ui` crashes on Android.
+- SwiftUI `Host`s that React Native positions get `ignoreSafeArea="all"`, or SwiftUI adds its own safe-area spacing on top (it pushed the AI panel's buttons and composer out of place).
 
 ## Brand
 

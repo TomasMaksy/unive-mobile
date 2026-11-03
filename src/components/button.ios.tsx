@@ -23,7 +23,11 @@ export function Button({ label, variant = 'primary', loading, disabled, onPress,
   const primary = variant === 'primary';
 
   return (
-    <Host matchContents={inline ? true : { vertical: true }} style={[inline ? null : { alignSelf: 'stretch' }, style]}>
+    // React Native places this; SwiftUI shouldn't add safe-area spacing of its own.
+    <Host
+      matchContents={inline ? true : { vertical: true }}
+      ignoreSafeArea="all"
+      style={[inline ? null : { alignSelf: 'stretch' }, style]}>
       <SwiftUIButton
         onPress={onPress}
         modifiers={[

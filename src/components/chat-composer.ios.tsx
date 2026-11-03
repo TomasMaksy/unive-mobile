@@ -101,7 +101,9 @@ export function ChatComposer({ busy, onSend, onStop, onAttach }: ChatComposerPro
       );
 
   return (
-    <Host matchContents={{ vertical: true }} colorScheme="light" style={{ width: '100%' }}>
+    // React Native positions the composer above the keyboard and home indicator;
+    // SwiftUI adding its own safe-area or keyboard spacing would push it off-screen.
+    <Host matchContents={{ vertical: true }} ignoreSafeArea="all" colorScheme="light" style={{ width: '100%' }}>
       <GlassEffectContainer>
         <VStack
           alignment="leading"

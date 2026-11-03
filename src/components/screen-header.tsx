@@ -10,16 +10,18 @@ import { authClient } from '@/lib/auth-client';
 
 type ScreenHeaderProps = {
   title: string;
+  /** Replaces the avatar on the left, e.g. a close button. */
+  left?: ReactNode;
   /** Shown on the right of the avatar row, e.g. a button. */
   right?: ReactNode;
 };
 
 /** The top of every tab: your avatar on the left (opens the profile, like Revolut), then the title. */
-export function ScreenHeader({ title, right }: ScreenHeaderProps) {
+export function ScreenHeader({ title, left, right }: ScreenHeaderProps) {
   return (
     <View style={styles.header}>
       <View style={styles.row}>
-        <Avatar />
+        {left ?? <Avatar />}
         {right}
       </View>
       <ThemedText type="subtitle">{title}</ThemedText>

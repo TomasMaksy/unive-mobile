@@ -1,13 +1,8 @@
 import { NativeTabs } from 'expo-router/native-tabs';
-import { Platform } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
-// From iOS 26, a tab with the search role sits in its own glass circle to the
-// right of the tab bar, like Bevel's. Older iOS would show it as a regular
-// tab titled "Search", so AI only gets the role where it renders separately.
-const separateAiTab = Platform.OS === 'ios' && parseFloat(String(Platform.Version)) >= 26;
-
+// AI isn't a tab: pull down from the top of any tab to open it (features/ai/ai-panel.tsx).
 export default function AppTabs() {
   return (
     <NativeTabs
@@ -34,19 +29,6 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="study">
         <NativeTabs.Trigger.Label>Study</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'book', selected: 'book.fill' }} md="menu_book" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger
-        name="ai"
-        {...(separateAiTab && {
-          role: 'search',
-          // Opening AI shouldn't pop up a search field and keyboard.
-          disableAutomaticSearchActivation: true,
-          // iOS 27 places the tab on its own surface this way instead.
-          prominent: true,
-        })}>
-        <NativeTabs.Trigger.Label>AI</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="sparkles" md="auto_awesome" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
