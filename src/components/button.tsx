@@ -1,17 +1,15 @@
-import { ActivityIndicator, Pressable, StyleSheet, type PressableProps } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Accent, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 
 type ButtonProps = PressableProps & {
   label: string;
+  /** primary: black, like the website's main buttons. secondary: white with a hairline border. */
   variant?: 'primary' | 'secondary';
   loading?: boolean;
 };
 
 export function Button({ label, variant = 'primary', loading, disabled, style, ...rest }: ButtonProps) {
-  const theme = useTheme();
   const primary = variant === 'primary';
 
   return (
@@ -19,17 +17,16 @@ export function Button({ label, variant = 'primary', loading, disabled, style, .
       disabled={disabled || loading}
       style={(state) => [
         styles.button,
-        { backgroundColor: primary ? Accent : theme.backgroundElement },
-        (state.pressed || disabled) && styles.dimmed,
+        primary ? styles.primary : styles.secondary,
+        state.pressed && styles.pressed,
+        disabled && styles.disabled,
         typeof style === 'function' ? style(state) : style,
       ]}
       {...rest}>
       {loading ? (
-        <ActivityIndicator color={primary ? '#ffffff' : theme.text} />
+        <ActivityIndicator color={primary ? '#ffffff' : Colors.text} />
       ) : (
-        <ThemedText type="smallBold" style={primary && { color: '#ffffff' }}>
-          {label}
-        </ThemedText>
+        <Text style={[styles.label, { color: primary ? '#ffffff' : Colors.text }]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -38,12 +35,28 @@ export function Button({ label, variant = 'primary', loading, disabled, style, .
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    borderRadius: 12,
+    borderRadius: Radius.control,
     paddingHorizontal: Spacing.three,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dimmed: {
-    opacity: 0.6,
+  primary: {
+    backgroundColor: Colors.text,
+  },
+  secondary: {
+    backgroundColor: Colors.backgroundElement,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  disabled: {
+    opacity: 0.4,
+  },
+  label: {
+    fontFamily: Fonts.sansMedium,
+    fontSize: 16,
   },
 });

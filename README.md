@@ -59,3 +59,8 @@ EXPO_PUBLIC_API_URL=https://your-preview.vercel.app npx expo start --clear
 - **Sign-out only happens on the device.** better-auth rejects the sign-out request without its `expo()` server plugin, so the server session lasts until it expires. Fix: add `expo()` and `trustedOrigins: ["unive://"]` in `unive-v22/src/lib/auth/server.ts`. Never trust `exp://` in production: with magic links enabled, an attacker could get a user's session sent to their own machine.
 - **Chat shows text only.** Tool cards (open a page, ask for input) aren't rendered yet.
 - **Only accounts with access can sign in**, the same as on the website.
+- **The app icon is still Expo's placeholder.** It needs a square 1024×1024 source with no transparency (the website's `unive-app-icon.png` has a shadow baked in). Expo Go shows its own icon anyway, so this matters only for a real build.
+
+## Brand
+
+Colors, fonts and radii live in [src/constants/theme.ts](src/constants/theme.ts), copied from the website (`unive-v22/src/app/globals.css` and the `/login` page). Headings use Averia Serif Libre and everything else uses Inter, loaded before the first screen renders. Like the website, the app is light-only for now.

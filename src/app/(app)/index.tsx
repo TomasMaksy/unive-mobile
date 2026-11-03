@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Accent, BottomTabInset, Spacing } from '@/constants/theme';
+import { BottomTabInset, Colors, Radius, Spacing } from '@/constants/theme';
 import { fetchCurrentPlan, type Plan, requestPlan, resolveTask, type Task } from '@/lib/action-plan';
 
 const POLL_INTERVAL_MS = 2_500;
@@ -62,18 +62,18 @@ export default function TodayScreen() {
       <SafeAreaView edges={['top']} style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.textSecondary} />}>
           <ThemedText type="subtitle">Today</ThemedText>
 
           {loading ? (
-            <ActivityIndicator style={styles.spinner} />
+            <ActivityIndicator color={Colors.text} style={styles.spinner} />
           ) : error ? (
             <ThemedText themeColor="textSecondary">{error}</ThemedText>
           ) : !plan ? (
             <ThemedText themeColor="textSecondary">No plan yet. Pull down to try again.</ThemedText>
           ) : plan.status === 'generating' ? (
             <View style={styles.row}>
-              <ActivityIndicator />
+              <ActivityIndicator color={Colors.textSecondary} />
               <ThemedText themeColor="textSecondary">Putting together today’s plan…</ThemedText>
             </View>
           ) : plan.status === 'failed' ? (
@@ -133,7 +133,7 @@ function TaskCard({ task, onPlanChange }: { task: Task; onPlanChange: (plan: Pla
             .join(' · ')}
         </ThemedText>
         {isDeadline && task.timing?.date && (
-          <ThemedText type="small" style={{ color: Accent }}>
+          <ThemedText type="small" themeColor="brandBlue">
             Deadline {task.timing.date}
             {task.timing.sourceLabel ? ` (${task.timing.sourceLabel})` : ''}
           </ThemedText>
@@ -153,13 +153,17 @@ function TaskCard({ task, onPlanChange }: { task: Task; onPlanChange: (plan: Pla
           </ThemedText>
           {task.executionMode === 'in_unive' && (
             <ThemedText type="small" themeColor="textSecondary">
-              This one happens on the unive website.
+              This one happens on the Unive website.
             </ThemedText>
           )}
         </View>
       )}
 
-      {error && <ThemedText type="small" style={styles.error}>{error}</ThemedText>}
+      {error && (
+        <ThemedText type="small" themeColor="destructive">
+          {error}
+        </ThemedText>
+      )}
 
       {!resolved && (
         <View style={styles.row}>
@@ -205,7 +209,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
     padding: Spacing.three,
     gap: Spacing.three,
   },
@@ -220,8 +226,5 @@ const styles = StyleSheet.create({
   },
   details: {
     gap: Spacing.two,
-  },
-  error: {
-    color: '#e5484d',
   },
 });

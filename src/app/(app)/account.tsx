@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import { API_URL, authClient, signOutOnDevice } from '@/lib/auth-client';
 
 export default function AccountScreen() {
@@ -15,14 +15,16 @@ export default function AccountScreen() {
       <SafeAreaView style={styles.content}>
         <ThemedText type="subtitle">Account</ThemedText>
         <ThemedView type="backgroundElement" style={styles.card}>
-          <ThemedText>{session?.user.name}</ThemedText>
+          <ThemedText type="smallBold">{session?.user.name}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             {session?.user.email}
           </ThemedText>
         </ThemedView>
-        <ThemedText type="small" themeColor="textSecondary">
-          Connected to {API_URL}
-        </ThemedText>
+        {__DEV__ && (
+          <ThemedText type="small" themeColor="textMuted">
+            Connected to {API_URL}
+          </ThemedText>
+        )}
         <Button label="Sign out" variant="secondary" onPress={signOutOnDevice} />
       </SafeAreaView>
     </ThemedView>
@@ -39,7 +41,9 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   card: {
-    borderRadius: 12,
+    borderRadius: Radius.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
     padding: Spacing.three,
     gap: Spacing.one,
   },

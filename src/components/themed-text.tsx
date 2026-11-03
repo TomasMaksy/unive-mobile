@@ -1,10 +1,10 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?: 'default' | 'title' | 'subtitle' | 'wordmark' | 'small' | 'smallBold' | 'link';
   themeColor?: ThemeColor;
 };
 
@@ -14,44 +14,45 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   return <Text style={[{ color: theme[themeColor ?? 'text'] }, styles[type], style]} {...rest} />;
 }
 
+// Headings use Averia Serif Libre with the website's tight tracking (-0.03em).
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
-  },
   default: {
+    fontFamily: Fonts.sans,
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: 500,
   },
   title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+    fontFamily: Fonts.heading,
+    fontSize: 36,
+    lineHeight: 40,
+    letterSpacing: -1.1,
   },
   subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+    fontFamily: Fonts.heading,
+    fontSize: 30,
+    lineHeight: 36,
+    letterSpacing: -0.9,
+  },
+  wordmark: {
+    fontFamily: Fonts.headingBold,
+    fontSize: 24,
+    lineHeight: 29,
+    letterSpacing: -1.2,
+  },
+  small: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  smallBold: {
+    fontFamily: Fonts.sansSemiBold,
+    fontSize: 14,
+    lineHeight: 20,
   },
   link: {
-    lineHeight: 30,
+    fontFamily: Fonts.sansMedium,
     fontSize: 14,
-  },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
-  },
-  code: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
+    lineHeight: 20,
+    textDecorationLine: 'underline',
   },
 });

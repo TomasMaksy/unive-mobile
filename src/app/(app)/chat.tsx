@@ -9,16 +9,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Accent, BottomTabInset, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { BottomTabInset, Colors, Radius, Spacing } from '@/constants/theme';
 import { authHeaders } from '@/lib/api';
 import { API_URL } from '@/lib/auth-client';
 
@@ -36,7 +35,6 @@ const transport = new DefaultChatTransport<UIMessage>({
 });
 
 export default function ChatScreen() {
-  const theme = useTheme();
   const [chatId, setChatId] = useState(randomUUID);
   const [input, setInput] = useState('');
   const listRef = useRef<FlatList<UIMessage>>(null);
@@ -94,9 +92,9 @@ export default function ChatScreen() {
             renderItem={({ item }) => <Message message={item} />}
             ListFooterComponent={
               <>
-                {status === 'submitted' && <ActivityIndicator style={styles.thinking} />}
+                {status === 'submitted' && <ActivityIndicator color={Colors.textSecondary} style={styles.thinking} />}
                 {error && (
-                  <ThemedText type="small" style={styles.error}>
+                  <ThemedText type="small" themeColor="destructive" style={styles.error}>
                     {error.message || 'Something went wrong. Try again.'}
                   </ThemedText>
                 )}
@@ -105,10 +103,9 @@ export default function ChatScreen() {
           />
 
           <View style={[styles.composer, { paddingBottom: BottomTabInset + Spacing.two }]}>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-              placeholder="Message unive"
-              placeholderTextColor={theme.textSecondary}
+            <TextField
+              style={styles.input}
+              placeholder="Message Unive"
               multiline
               value={input}
               onChangeText={setInput}
@@ -133,12 +130,13 @@ function Message({ message }: { message: UIMessage }) {
     .join('\n\n')
     .trim();
 
-  return (
-    <ThemedView
-      type={mine ? undefined : 'backgroundElement'}
-      style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
-      <ThemedText style={mine && { color: '#ffffff' }}>{text}</ThemedText>
-    </ThemedView>
+  // Like the website: your messages sit in a white pill, replies are plain text.
+  return mine ? (
+    <View style={[styles.bubble, styles.mine]}>
+      <ThemedText>{text}</ThemedText>
+    </View>
+  ) : (
+    <ThemedText style={styles.theirs}>{text}</ThemedText>
   );
 }
 
@@ -154,18 +152,20 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
   },
   list: {
-    gap: Spacing.two,
+    gap: Spacing.four,
     padding: Spacing.four,
   },
   bubble: {
-    borderRadius: 16,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     maxWidth: '85%',
   },
   mine: {
     alignSelf: 'flex-end',
-    backgroundColor: Accent,
+    backgroundColor: Colors.backgroundElement,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   theirs: {
     alignSelf: 'flex-start',
@@ -175,7 +175,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   error: {
-    color: '#e5484d',
     marginTop: Spacing.two,
   },
   composer: {
@@ -187,12 +186,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 48,
     maxHeight: 140,
-    borderRadius: 12,
-    paddingHorizontal: Spacing.three,
-    paddingTop: 14,
-    paddingBottom: 14,
-    fontSize: 16,
+    paddingTop: 13,
+    paddingBottom: 13,
   },
 });
