@@ -59,7 +59,7 @@ EXPO_PUBLIC_API_URL=https://your-preview.vercel.app npx expo start --clear
 
 ## Known limits of the prototype
 
-- **Sign-out only happens on the device.** better-auth rejects the sign-out request without its `expo()` server plugin, so the server session lasts until it expires. Fix: add `expo()` and `trustedOrigins: ["unive://"]` in `unive-v22/src/lib/auth/server.ts`. Never trust `exp://` in production: with magic links enabled, an attacker could get a user's session sent to their own machine.
+- **Sign-out from Expo Go against production only happens on the device.** unive-v2 runs better-auth's `expo()` plugin and trusts `unive://` (our own builds) plus, in development only, Expo Go's `exp://`. So sign-out ends the server session locally and in our builds; production rightly doesn't trust Expo Go.
 - **Chat shows no tool cards.** Replies render as Markdown, but the cards the website shows alongside them (open a page, ask for input) aren't in the app yet; most point at screens the app doesn't have.
 - **Attachments say "coming soon".** The composer's + menu (Camera, Photos, Files) is in place, but the app can't send files yet: the website's upload is switched off (`files-button.tsx`), and its upload is a Next.js server action the app can't call. It needs an upload API route in unive-v22.
 - **No mic button.** Speech recognition isn't in Expo Go; it needs our own development build. The iPhone keyboard's dictation works meanwhile.

@@ -15,11 +15,12 @@ export const authClient = createAuthClient({
 });
 
 /**
- * The backend doesn't run better-auth's expo() plugin, so it rejects sign-out
- * (a POST with a session but no Origin header). The client still wipes the
- * stored session before sending, so this only signs out on this device; the
- * server session lives until it expires.
+ * Ends the session on the server too: unive-v2 runs better-auth's expo()
+ * plugin, which accepts the app's expo-origin header. It trusts unive:// (our
+ * own builds) everywhere and Expo Go only in development, so Expo Go against
+ * production still signs out on this device only. The client wipes the stored
+ * session either way.
  */
-export async function signOutOnDevice() {
+export async function signOut() {
   await authClient.signOut().catch(() => {});
 }

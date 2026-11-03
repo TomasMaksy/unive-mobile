@@ -8,7 +8,7 @@ import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
-import { API_URL, authClient, signOutOnDevice } from '@/lib/auth-client';
+import { API_URL, authClient, signOut } from '@/lib/auth-client';
 
 const PRIVACY_POLICY_URL = 'https://unive.ai/legal/privacy-policy';
 
@@ -25,7 +25,7 @@ export default function SignInScreen() {
     try {
       // An expired session left on the device would make better-auth reject
       // the request for missing an Origin header, so drop it first.
-      if (await authClient.getCookie()) await signOutOnDevice();
+      if (await authClient.getCookie()) await signOut();
 
       const { error } = await authClient.emailOtp.sendVerificationOtp({
         email: email.trim().toLowerCase(),
