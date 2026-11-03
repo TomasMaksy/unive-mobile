@@ -1,63 +1,76 @@
 import * as Haptics from 'expo-haptics';
+import { SymbolView } from 'expo-symbols';
 import { createContext, use, useState, type ReactNode } from 'react';
-import { Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
   useAnimatedReaction,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { AiChat } from '@/features/ai/ai-chat';
 
 /** How far past the top you pull before letting go opens the AI. */
 const OPEN_THRESHOLD = 110;
 
+// Expo's "strong ease-out for UI": fast to respond, gentle to settle, no bounce.
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+
 type AiPanelContextValue = {
   /** How far the current tab is pulled down past its top, in points. */
   pull: SharedValue<number>;
-  /** True while the panel is opening, open or closing: the pull no longer moves it. */
+  /** True while the AI is opening, open or closing: pulling the tab does nothing then. */
   engaged: SharedValue<boolean>;
-  open: (fromY: number) => void;
-  height: number;
+  open: () => void;
 };
 
 const AiPanelContext = createContext<AiPanelContextValue | null>(null);
 
 /**
- * The AI lives above the tabs, like Revolut's: pull down from the top of any
- * tab and it comes down after your finger, with a haptic tick once letting go
- * will open it. Drag its header up, flick it, or tap the chevron to send it back.
+ * The AI lives above the tabs, like Revolut's. Pulling down from the top of
+ * any tab grows a gradient from the notch and a "Swipe to ask AI" hint, with
+ * a haptic tick once letting go will open it; only on release does the AI
+ * take over the screen. Drag its header up, flick it, or tap the chevron to
+ * send it back.
  */
 export function AiPanelProvider({ children }: { children: ReactNode }) {
   const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const pull = useSharedValue(0);
   const engaged = useSharedValue(false);
-  // The panel's position once engaged: 0 is fully down, -height is hidden above the screen.
-  const y = useSharedValue(-height);
+  // 0 = closed, 1 = open.
+  const progress = useSharedValue(0);
+  // How far the open panel is being dragged by its header.
+  const dragY = useSharedValue(0);
   const dragStart = useSharedValue(0);
   const [isOpen, setIsOpen] = useState(false);
 
-  function open(fromY: number) {
+  function open() {
     'worklet';
     engaged.set(true);
-    pull.set(0);
-    y.set(fromY);
-    y.set(withSpring(0, { duration: 450, dampingRatio: 0.85 }));
+    pull.set(withTiming(0, { duration: 200, easing: EASE_OUT }));
+    progress.set(withTiming(1, { duration: 320, easing: EASE_OUT }));
     scheduleOnRN(setIsOpen, true);
   }
 
-  function close(velocity = 0) {
+  function close() {
     'worklet';
-    y.set(
-      withSpring(-height, { duration: 350, dampingRatio: 1, velocity, overshootClamping: true }, (finished) => {
+    progress.set(
+      withTiming(0, { duration: 240, easing: EASE_OUT }, (finished) => {
         if (finished) {
           engaged.set(false);
+          dragY.set(0);
           scheduleOnRN(setIsOpen, false);
         }
       }),
@@ -76,33 +89,63 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
   const headerGesture = usePanGesture({
     activeOffsetY: [-10, 10],
     onActivate: () => {
-      dragStart.set(y.get());
+      dragStart.set(dragY.get());
     },
     onUpdate: (e) => {
       const next = dragStart.get() + e.translationY;
-      // Up is free; pulling further down resists.
-      y.set(next <= 0 ? next : rubberband(next, height));
+      // Up follows the finger; down resists.
+      dragY.set(next <= 0 ? next : rubberband(next, height));
     },
     onDeactivate: (e) => {
-      const projected = y.get() + project(e.velocityY);
-      if (projected < -height * 0.3) {
-        close(e.velocityY);
+      const projected = dragY.get() + project(e.velocityY);
+      if (projected < -height * 0.25) {
+        close();
         scheduleOnRN(dismissKeyboard);
       } else {
-        y.set(withSpring(0, { duration: 300, dampingRatio: 0.8, velocity: e.velocityY }));
+        dragY.set(withSpring(0, { duration: 300, dampingRatio: 1, velocity: e.velocityY }));
       }
     },
   });
 
+  // While pulling: a gradient grows down from the notch with the pull.
+  const gradientStyle = useAnimatedStyle(() => ({
+    height: insets.top + pull.get() * 1.4,
+    opacity: interpolate(pull.get(), [0, OPEN_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+  }));
+
+  // ...and a hint fades in just below the notch, moving slower than the content (parallax).
+  // It grows a little once letting go will open the AI.
+  const hintStyle = useAnimatedStyle(() => {
+    const armed = pull.get() >= OPEN_THRESHOLD;
+    return {
+      opacity: interpolate(pull.get(), [24, 80], [0, 1], Extrapolation.CLAMP),
+      transform: [
+        { translateY: pull.get() * 0.35 - 12 },
+        { scale: withTiming(armed ? 1.06 : 1, { duration: 150, easing: EASE_OUT }) },
+      ],
+    };
+  });
+
+  // Open: the AI fades in and settles into place. Closed: hidden and inert.
   const panelStyle = useAnimatedStyle(() => ({
-    // While you pull, the panel's bottom edge travels with the top of the content.
-    transform: [{ translateY: engaged.get() ? y.get() : -height + pull.get() }],
+    opacity: progress.get(),
+    transform: [
+      { translateY: dragY.get() + interpolate(progress.get(), [0, 1], [-24, 0]) },
+      { scale: interpolate(progress.get(), [0, 1], [0.98, 1]) },
+    ],
   }));
 
   return (
-    <AiPanelContext value={{ pull, engaged, open, height }}>
+    <AiPanelContext value={{ pull, engaged, open }}>
       <View style={styles.container}>
         {children}
+
+        <Animated.View pointerEvents="none" style={[styles.gradient, gradientStyle]} />
+        <Animated.View pointerEvents="none" style={[styles.hint, { top: insets.top + 6 }, hintStyle]}>
+          <SymbolView name="sparkles" size={15} tintColor={Colors.olive} />
+          <Text style={styles.hintText}>Swipe to ask AI</Text>
+        </Animated.View>
+
         <Animated.View style={[styles.panel, panelStyle]} pointerEvents={isOpen ? 'auto' : 'none'}>
           <AiChat
             headerGesture={headerGesture}
@@ -124,7 +167,7 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
 export function useAiPull() {
   const context = use(AiPanelContext);
   if (!context) throw new Error('useAiPull must be used inside AiPanelProvider');
-  const { pull, engaged, open, height } = context;
+  const { pull, engaged, open } = context;
 
   return useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -132,7 +175,7 @@ export function useAiPull() {
     },
     onEndDrag: (e) => {
       const distance = -(e.contentOffset.y + e.contentInset.top);
-      if (!engaged.get() && distance >= OPEN_THRESHOLD) open(-height + distance);
+      if (!engaged.get() && distance >= OPEN_THRESHOLD) open();
     },
   });
 }
@@ -158,17 +201,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  gradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    // Unive's olive green (Colors.olive, the landing page's forest greens) at the notch, fading to nothing.
+    experimental_backgroundImage: 'linear-gradient(180deg, rgba(111, 118, 68, 0.4), rgba(111, 118, 68, 0))',
+  },
+  hint: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  hintText: {
+    fontFamily: Fonts.sansMedium,
+    fontSize: 14,
+    color: Colors.text,
+  },
   panel: {
     ...StyleSheet.absoluteFill,
     backgroundColor: Colors.background,
-    // Rounded bottom corners while it hangs from the top; at rest they meet the screen's own.
-    borderBottomLeftRadius: 44,
-    borderBottomRightRadius: 44,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
   },
 });

@@ -31,6 +31,8 @@ export const Colors = {
   brandBlue: '#4893f9',
   /** --brand-blue-soft */
   brandBlueSoft: '#eef4ff',
+  /** --roadmap-olive: the landing page's forest greens */
+  olive: '#6f7644',
   /** --destructive (red-600) */
   destructive: '#e7000b',
 } as const;
