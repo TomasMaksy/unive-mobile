@@ -49,7 +49,8 @@ export function ChatComposer({ busy, onSend, onStop, onAttach, autoFocus }: Chat
   const canSend = text.trim().length > 0 && !busy;
 
   useEffect(() => {
-    if (autoFocus) textRef.current?.focus();
+    // Can miss if the native field is being swapped out (e.g. on a fast refresh); then just don't focus.
+    if (autoFocus) textRef.current?.focus().catch(() => {});
   }, [autoFocus]);
 
   function send() {
