@@ -9,6 +9,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 
 import { Button } from '@/components/button';
 import { ChatComposer } from '@/components/chat-composer';
+import { MarkdownText } from '@/components/markdown-text';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -102,7 +103,9 @@ function Chat() {
             Ask anything about your applications, essays or deadlines.
           </ThemedText>
         }
-        renderItem={({ item }) => <Message message={item} />}
+        renderItem={({ item, index }) => (
+          <Message message={item} streaming={status === 'streaming' && index === visible.length - 1} />
+        )}
         ListFooterComponent={
           <>
             {status === 'submitted' && <ActivityIndicator color={Colors.textSecondary} style={styles.thinking} />}
@@ -128,7 +131,7 @@ function Chat() {
   );
 }
 
-function Message({ message }: { message: UIMessage }) {
+function Message({ message, streaming }: { message: UIMessage; streaming: boolean }) {
   const mine = message.role === 'user';
   // Tool cards (open a page, ask for input, …) are web-only for now; show the text.
   const text = message.parts
@@ -136,13 +139,15 @@ function Message({ message }: { message: UIMessage }) {
     .join('\n\n')
     .trim();
 
-  // Like the website: your messages sit in a white pill, replies are plain text.
+  // Like the website: your messages sit in a white pill, replies are formatted Markdown.
   return mine ? (
     <View style={[styles.bubble, styles.mine]}>
-      <ThemedText>{text}</ThemedText>
+      <ThemedText selectable>{text}</ThemedText>
     </View>
   ) : (
-    <ThemedText style={styles.theirs}>{text}</ThemedText>
+    <View style={styles.theirs}>
+      <MarkdownText streaming={streaming}>{text}</MarkdownText>
+    </View>
   );
 }
 
@@ -167,7 +172,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   theirs: {
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
   },
   thinking: {
     alignSelf: 'flex-start',

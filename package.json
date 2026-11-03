@@ -8,6 +8,7 @@
     "@expo-google-fonts/averia-serif-libre": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/ui": "~58.0.26",
+    "@ronradtke/react-native-markdown-display": "^9.0.3",
     "@stardazed/streams-text-encoding": "^1.0.2",
     "@ungap/structured-clone": "^1.4.0",
     "ai": "^7.0.162",
