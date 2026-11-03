@@ -23,6 +23,8 @@ import { AiChat } from '@/features/ai/ai-chat';
 
 /** How far past the top you pull before letting go opens the AI. */
 const OPEN_THRESHOLD = 110;
+/** How far up you drag the open AI before letting go closes it. */
+const CLOSE_THRESHOLD = 110;
 
 // Expo's "strong ease-out for UI": fast to respond, gentle to settle, no bounce.
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -54,6 +56,8 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
   // How far the open panel is being dragged by its header.
   const dragY = useSharedValue(0);
   const dragStart = useSharedValue(0);
+  const dragging = useSharedValue(false);
+  const closing = useSharedValue(false);
   const [isOpen, setIsOpen] = useState(false);
 
   function open() {
@@ -66,9 +70,13 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
 
   function close() {
     'worklet';
+    closing.set(true);
+    // Carry on upwards (from wherever a drag left it) while fading out.
+    dragY.set(withTiming(Math.min(dragY.get(), 0) - height * 0.2, { duration: 240, easing: EASE_OUT }));
     progress.set(
       withTiming(0, { duration: 240, easing: EASE_OUT }, (finished) => {
         if (finished) {
+          closing.set(false);
           engaged.set(false);
           dragY.set(0);
           scheduleOnRN(setIsOpen, false);
@@ -85,9 +93,18 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
     },
   );
 
-  // Dragging the panel up sends it back; a quick flick is enough (velocity decides, not distance).
+  // ...and the same tick when you've dragged the AI far enough up that letting go will close it.
+  useAnimatedReaction(
+    () => dragging.get() && dragY.get() <= -CLOSE_THRESHOLD,
+    (armed, wasArmed) => {
+      if (armed && !wasArmed) scheduleOnRN(Haptics.impactAsync, Haptics.ImpactFeedbackStyle.Medium);
+    },
+  );
+
+  // Dragging the panel up sends it back: far enough (past the tick), or a quick flick.
   function startDrag() {
     'worklet';
+    dragging.set(true);
     dragStart.set(dragY.get());
   }
   function drag(e: { translationY: number }) {
@@ -98,8 +115,9 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
   }
   function endDrag(e: { velocityY: number }) {
     'worklet';
+    dragging.set(false);
     const projected = dragY.get() + project(e.velocityY);
-    if (projected < -height * 0.25) {
+    if (dragY.get() <= -CLOSE_THRESHOLD || projected < -height * 0.25) {
       close();
       scheduleOnRN(dismissKeyboard);
     } else {
@@ -166,6 +184,7 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
             isOpen={isOpen}
             headerGesture={headerGesture}
             composerGesture={composerGesture}
+            closing={closing}
             onClose={() => {
               Keyboard.dismiss();
               close();

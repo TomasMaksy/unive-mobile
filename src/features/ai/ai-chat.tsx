@@ -10,8 +10,11 @@ import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedKeyboard,
+  useAnimatedReaction,
   useAnimatedStyle,
+  useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,15 +58,26 @@ type AiChatProps = {
   headerGesture: PanGesture;
   /** ...and so does grabbing the input and dragging it up. */
   composerGesture: PanGesture;
+  /** True while the panel is closing: the layout holds still instead of following the keyboard down. */
+  closing: SharedValue<boolean>;
 };
 
 /**
  * The unive AI chat. It lives in the panel you pull down from the top of any
  * tab, which covers the whole screen, so the app-wide safe area applies.
  */
-export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiChatProps) {
+export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closing }: AiChatProps) {
   const insets = useSafeAreaInsets();
   const keyboard = useAnimatedKeyboard();
+  // The keyboard's height, except while the AI closes: then the keyboard goes down but
+  // the input stays where it was, so the whole panel moves away together.
+  const keyboardHeight = useSharedValue(0);
+  useAnimatedReaction(
+    () => (closing.get() ? null : keyboard.height.value),
+    (height) => {
+      if (height !== null) keyboardHeight.set(height);
+    },
+  );
   // The messages fill the whole screen and scroll under the header and the input,
   // which float on top; these are their measured heights, to keep the first and
   // last message clear of them.
@@ -72,31 +86,31 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiCh
   // Sit above the home indicator, or above the keyboard while it's open.
   // Runs on the UI thread, so it follows the keyboard smoothly.
   const composerStyle = useAnimatedStyle(() => ({
-    paddingBottom: Math.max(keyboard.height.value, insets.bottom) + Spacing.two,
+    paddingBottom: Math.max(keyboardHeight.get(), insets.bottom) + Spacing.two,
   }));
   // The list ends at the keyboard; below the last message, room for the input.
   const listStyle = useAnimatedStyle(() => ({
-    bottom: keyboard.height.value,
+    bottom: keyboardHeight.get(),
   }));
   const listEndStyle = useAnimatedStyle(() => ({
-    height: composerHeight + Spacing.four + Math.max(insets.bottom - keyboard.height.value, 0),
+    height: composerHeight + Spacing.four + Math.max(insets.bottom - keyboardHeight.get(), 0),
   }));
   // Messages fade out under the input rather than stopping at a hard edge.
   const bottomFadeStyle = useAnimatedStyle(() => ({
-    height: Math.max(keyboard.height.value, insets.bottom) + Spacing.two + composerHeight + Spacing.five,
+    height: Math.max(keyboardHeight.get(), insets.bottom) + Spacing.two + composerHeight + Spacing.five,
   }));
   // The olive glow rises from just under the composer, so it rides up with the keyboard too.
   const glowStyle = useAnimatedStyle(() => ({
-    bottom: keyboard.height.value,
+    bottom: keyboardHeight.get(),
   }));
   // Without the keyboard it's strongest at the bottom of the screen. With it, it fades out
   // before the keyboard instead: iOS 26 paints its own backdrop around the keyboard, so olive
   // right down to it would end in a hard line there.
   const keyboardShown = useAnimatedStyle(() => ({
-    opacity: interpolate(keyboard.height.value, [0, 120], [0, 1], Extrapolation.CLAMP),
+    opacity: interpolate(keyboardHeight.get(), [0, 120], [0, 1], Extrapolation.CLAMP),
   }));
   const keyboardHidden = useAnimatedStyle(() => ({
-    opacity: interpolate(keyboard.height.value, [0, 120], [1, 0], Extrapolation.CLAMP),
+    opacity: interpolate(keyboardHeight.get(), [0, 120], [1, 0], Extrapolation.CLAMP),
   }));
   const { data: session } = authClient.useSession();
   const firstName = session?.user.name?.trim().split(/\s+/)[0];
