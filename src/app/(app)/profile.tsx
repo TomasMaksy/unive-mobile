@@ -37,8 +37,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Same spot and size as the avatar it zoomed out of (see screen-header.tsx).
   close: {
     position: 'absolute',
-    left: Spacing.three,
+    left: Spacing.four,
   },
 });

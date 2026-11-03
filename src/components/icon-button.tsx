@@ -26,8 +26,8 @@ export function IconButton({ accessibilityLabel, onPress }: IconButtonProps) {
 const styles = StyleSheet.create({
   button: {
     ...Shape.pill,
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.backgroundSelected,

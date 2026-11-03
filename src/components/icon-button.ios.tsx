@@ -16,7 +16,10 @@ import { Colors } from '@/constants/theme';
 
 const glass = isLiquidGlassAvailable();
 
-/** A round native button with an SF Symbol: glass with the system's bounce on iOS 26. */
+/**
+ * A round native button with an SF Symbol: glass with the system's bounce on
+ * iOS 26. 40pt across, the same as the avatar in screen-header.tsx.
+ */
 export function IconButton({ systemImage, accessibilityLabel, onPress }: IconButtonProps) {
   return (
     <Host matchContents>
@@ -25,12 +28,12 @@ export function IconButton({ systemImage, accessibilityLabel, onPress }: IconBut
         modifiers={[
           buttonStyle(glass ? 'glass' : 'bordered'),
           buttonBorderShape('circle'),
-          controlSize('large'),
+          controlSize('regular'),
           accessibilityLabelModifier(accessibilityLabel),
         ]}>
         <Image
           systemName={systemImage}
-          modifiers={[font({ size: 17, weight: 'semibold' }), foregroundStyle(Colors.text), frame({ width: 24, height: 24 })]}
+          modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(Colors.text), frame({ width: 26, height: 26 })]}
         />
       </Button>
     </Host>
