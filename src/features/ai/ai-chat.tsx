@@ -5,7 +5,14 @@ import { fetch as expoFetch } from 'expo/fetch';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
-import Animated, { Extrapolation, interpolate, useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedKeyboard,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatComposer } from '@/components/chat-composer';
@@ -88,6 +95,13 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiCh
     generateId: randomUUID,
   });
   const busy = status === 'submitted' || status === 'streaming';
+
+  // The glow is for the empty chat: it slowly dissolves once the first message goes,
+  // and comes back for a new chat.
+  const empty = messages.length === 0;
+  const glowFadeStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(empty ? 1 : 0, { duration: 900, easing: Easing.out(Easing.quad) }),
+  }));
 
   // The chat list comes from the backend, so it's the same as the website's.
   // Refresh it when the panel opens and once each reply has finished (the new
@@ -196,7 +210,7 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture }: AiCh
         }
       />
 
-      <Animated.View pointerEvents="none" style={[styles.glow, glowStyle]}>
+      <Animated.View pointerEvents="none" style={[styles.glow, glowStyle, glowFadeStyle]}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.glowToEdge, keyboardHidden]} />
         <Animated.View style={[StyleSheet.absoluteFill, styles.glowAboveKeyboard, keyboardShown]} />
       </Animated.View>
