@@ -6,7 +6,7 @@ import { IconButton } from '@/components/icon-button';
 import { ProfileList } from '@/components/profile-list';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { API_URL, authClient, signOut } from '@/lib/auth-client';
+import { authClient, signOut } from '@/lib/auth-client';
 
 /**
  * Zooms out of the avatar at the top left of every tab (see screen-header.tsx).
@@ -26,7 +26,6 @@ export default function ProfileScreen() {
       <ProfileList
         name={fullName}
         email={session?.user.email ?? ''}
-        backend={__DEV__ ? API_URL : undefined}
         // Needs the invite link from the backend, which the app can't get yet.
         onInvite={() => Alert.alert('Coming soon', 'Inviting friends from the app is on its way.')}
         onOpen={(screen) => router.push(`/${screen}`)}

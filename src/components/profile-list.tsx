@@ -8,8 +8,6 @@ import { Colors, Shape, Spacing } from '@/constants/theme';
 export type ProfileListProps = {
   name: string;
   email: string;
-  /** Shown in development only: the backend the app talks to. */
-  backend?: string;
   onInvite: () => void;
   onOpen: (screen: ProfileScreen) => void;
   onSignOut: () => void;
@@ -19,7 +17,7 @@ export type ProfileListProps = {
  * Android and web fallback. On iOS, profile-list.ios.tsx renders a native
  * SwiftUI grouped list instead.
  */
-export function ProfileList({ name, email, backend, onInvite, onOpen, onSignOut }: ProfileListProps) {
+export function ProfileList({ name, email, onInvite, onOpen, onSignOut }: ProfileListProps) {
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -43,11 +41,6 @@ export function ProfileList({ name, email, backend, onInvite, onOpen, onSignOut 
           </Pressable>
         ))}
       </View>
-      {backend ? (
-        <ThemedText type="small" themeColor="textMuted">
-          Connected to {backend}
-        </ThemedText>
-      ) : null}
       <Button label="Sign out" variant="secondary" onPress={onSignOut} />
     </ScrollView>
   );

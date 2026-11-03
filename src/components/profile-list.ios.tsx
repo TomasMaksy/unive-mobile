@@ -1,11 +1,12 @@
 import { Host } from '@expo/ui';
-import { Button, HStack, Image, LabeledContent, List, Section, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { Button, HStack, Image, List, Section, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   background,
   clipShape,
   font,
   foregroundStyle,
   frame,
+  kerning,
   listRowBackground,
   listStyle,
   multilineTextAlignment,
@@ -18,12 +19,14 @@ import type { ProfileListProps } from '@/components/profile-list';
 import { PROFILE_LINKS } from '@/components/profile-links';
 import { Colors } from '@/constants/theme';
 
+const NAME_SIZE = 32;
+
 /**
  * The profile as a native grouped list, the same SwiftUI List iOS Settings
  * uses, laid out like Revolut's: your photo and name on top, inviting friends,
  * then the rest of Unive.
  */
-export function ProfileList({ name, email, backend, onInvite, onOpen, onSignOut }: ProfileListProps) {
+export function ProfileList({ name, email, onInvite, onOpen, onSignOut }: ProfileListProps) {
   const initial = (name || email || '?').trim().charAt(0).toUpperCase();
 
   return (
@@ -41,7 +44,9 @@ export function ProfileList({ name, email, backend, onInvite, onOpen, onSignOut 
             </ZStack>
             <Text
               modifiers={[
-                font({ family: 'AveriaSerifLibre-Regular', size: 32 }),
+                font({ family: 'AveriaSerifLibre-Regular', size: NAME_SIZE }),
+                // The heading font's tight tracking, like the website's (-0.03em) and ThemedText's.
+                kerning(NAME_SIZE * -0.03),
                 foregroundStyle(Colors.text),
                 multilineTextAlignment('center'),
                 padding({ top: 8 }),
@@ -63,14 +68,6 @@ export function ProfileList({ name, email, backend, onInvite, onOpen, onSignOut 
             <Row key={link.screen} systemImage={link.systemImage} title={link.title} onPress={() => onOpen(link.screen)} />
           ))}
         </Section>
-
-        {backend ? (
-          <Section title="Development">
-            <LabeledContent label="Backend">
-              <Text>{backend}</Text>
-            </LabeledContent>
-          </Section>
-        ) : null}
 
         <Section>
           <Button role="destructive" label="Sign out" onPress={onSignOut} />
