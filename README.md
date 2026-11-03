@@ -7,7 +7,7 @@ A prototype of the unive mobile app (iOS and Android), built with Expo. The web 
 - **Sign in** with an emailed code, the same login as the website.
 - **Tabs:** Home, Apps (applications), Essay and Study are empty for now. On iOS 26+, **AI** sits in its own glass circle to the right of the tab bar (a tab with the search role); on older iOS it's a regular tab.
 - **AI:** the unive AI assistant, with a ChatGPT-style composer built from Apple's own SwiftUI views via `@expo/ui` ([src/components/chat-composer.tsx](src/components/chat-composer.tsx)): a glass pill that springs open while you type (the website's global chat), with streamed replies. Chats are saved by the backend like the website's, so they show up in the website's chat history for the same account and backend.
-- **Profile:** your avatar at the top left of every tab opens it (who's signed in, and sign out).
+- **Profile:** your avatar at the top left of every tab zooms out into it, like Revolut (Apple's zoom transition, iOS 18+): who's signed in, and sign out, as a native grouped list.
 
 A **Today** screen (the admissions action plan from `/api/admissions/action-plan`) is built but hidden, because the website doesn't show the action plan yet. Its code is in [src/features/today](src/features/today). While it was visible, opening it generated a plan for the account if none existed.
 
@@ -65,6 +65,14 @@ EXPO_PUBLIC_API_URL=https://your-preview.vercel.app npx expo start --clear
 - **No mic button.** Speech recognition isn't in Expo Go; it needs our own development build. The iPhone keyboard's dictation works meanwhile.
 - **Only accounts with access can sign in**, the same as on the website.
 - **The app icon is still Expo's placeholder.** It needs a square 1024×1024 source with no transparency (the website's `unive-app-icon.png` has a shadow baked in). Expo Go shows its own icon anyway, so this matters only for a real build.
+
+## Native building blocks
+
+Use these instead of hand-made controls, so the app feels like iOS:
+
+- [`Button`](src/components/button.ios.tsx): a real SwiftUI button. Glass styles with the system's bouncy press on iOS 26, classic filled/bordered before that. `button.tsx` is the Android/web fallback.
+- [`PressableScale`](src/components/pressable-scale.tsx): press feedback for custom tappable things (avatars, cards): a quick shrink and a slight spring back, optional haptic. From Expo's press-feedback recipe.
+- SwiftUI-only code lives in `.ios.tsx` files with a fallback next to it, because `@expo/ui/swift-ui` crashes on Android.
 
 ## Brand
 

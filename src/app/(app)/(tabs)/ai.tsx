@@ -79,6 +79,7 @@ function Chat() {
             <Button
               label="New chat"
               variant="secondary"
+              inline
               disabled={busy}
               onPress={() => setChatId(randomUUID())}
             />

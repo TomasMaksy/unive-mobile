@@ -1,44 +1,62 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
+import { PressableScale } from '@/components/pressable-scale';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 
-type ButtonProps = PressableProps & {
+export type ButtonProps = {
   label: string;
-  /** primary: black, like the website's main buttons. secondary: white with a hairline border. */
+  /** primary: solid black. secondary: white with a hairline border (glass on iOS 26). */
   variant?: 'primary' | 'secondary';
   loading?: boolean;
+  disabled?: boolean;
+  onPress?: () => void;
+  /** Size to the label instead of filling the width. */
+  inline?: boolean;
+  style?: StyleProp<ViewStyle>;
 };
 
-export function Button({ label, variant = 'primary', loading, disabled, style, ...rest }: ButtonProps) {
+/**
+ * Android and web fallback. On iOS, button.ios.tsx renders a real SwiftUI
+ * button instead (Metro picks the .ios file automatically).
+ */
+export function Button({ label, variant = 'primary', loading, disabled, onPress, inline, style }: ButtonProps) {
   const primary = variant === 'primary';
+  const inactive = disabled || loading;
 
   return (
-    <Pressable
-      disabled={disabled || loading}
-      style={(state) => [
+    <PressableScale
+      accessibilityRole="button"
+      disabled={inactive}
+      onPress={onPress}
+      style={[
         styles.button,
         primary ? styles.primary : styles.secondary,
-        state.pressed && styles.pressed,
-        disabled && styles.disabled,
-        typeof style === 'function' ? style(state) : style,
-      ]}
-      {...rest}>
+        inline ? styles.inline : styles.stretch,
+        inactive && styles.disabled,
+        style,
+      ]}>
       {loading ? (
         <ActivityIndicator color={primary ? '#ffffff' : Colors.text} />
       ) : (
         <Text style={[styles.label, { color: primary ? '#ffffff' : Colors.text }]}>{label}</Text>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
     ...Shape.pill,
-    minHeight: 48,
+    minHeight: 50,
     paddingHorizontal: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  stretch: {
+    alignSelf: 'stretch',
+  },
+  inline: {
+    alignSelf: 'flex-start',
   },
   primary: {
     backgroundColor: Colors.text,
@@ -47,10 +65,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundElement,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
   },
   disabled: {
     opacity: 0.4,

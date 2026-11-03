@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import { authClient } from '@/lib/auth-client';
@@ -26,25 +27,27 @@ export function ScreenHeader({ title, right }: ScreenHeaderProps) {
   );
 }
 
+// Like Revolut: the profile zooms out of the avatar to fill the screen
+// (Apple's zoom transition, iOS 18+), and pinch or swipe down zooms it back.
 function Avatar() {
-  const router = useRouter();
   const { data: session } = authClient.useSession();
   const user = session?.user;
   const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Profile"
-      hitSlop={8}
-      onPress={() => router.push('/profile')}
-      style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}>
-      {user?.image ? (
-        <Image source={user.image} style={styles.image} />
-      ) : (
-        <Text style={styles.initial}>{initial}</Text>
-      )}
-    </Pressable>
+    <Link href="/profile" asChild>
+      <Link.Trigger withAppleZoom>
+        <PressableScale accessibilityRole="button" accessibilityLabel="Profile" pressedScale={0.9} haptic>
+          <View style={styles.avatar}>
+            {user?.image ? (
+              <Image source={user.image} style={styles.image} />
+            ) : (
+              <Text style={styles.initial}>{initial}</Text>
+            )}
+          </View>
+        </PressableScale>
+      </Link.Trigger>
+    </Link>
   );
 }
 
@@ -70,9 +73,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.backgroundSelected,
-  },
-  pressed: {
-    opacity: 0.7,
   },
   image: {
     width: AVATAR_SIZE,
