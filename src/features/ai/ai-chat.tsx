@@ -239,7 +239,7 @@ function Message({ message, streaming }: { message: UIMessage; streaming: boolea
     .join('\n\n')
     .trim();
 
-  // Like the website: your messages sit in a white pill, replies are formatted Markdown.
+  // Your messages sit in a white pill like the input, replies are formatted Markdown.
   return mine ? (
     <View style={[styles.bubble, styles.mine]}>
       <ThemedText selectable>{text}</ThemedText>
@@ -268,8 +268,6 @@ const styles = StyleSheet.create({
   mine: {
     alignSelf: 'flex-end',
     backgroundColor: Colors.backgroundElement,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   listEmpty: {
     flexGrow: 1,
