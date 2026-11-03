@@ -18,7 +18,8 @@ const glass = isLiquidGlassAvailable();
 
 /**
  * A round native button with an SF Symbol: glass with the system's bounce on
- * iOS 26. 40pt across, the same as the avatar in screen-header.tsx.
+ * iOS 26. 44pt across (Apple's minimum tap target), the same as the avatar in
+ * screen-header.tsx, with a 17pt symbol like the system's bar buttons.
  */
 export function IconButton({ systemImage, accessibilityLabel, onPress }: IconButtonProps) {
   return (
@@ -34,7 +35,7 @@ export function IconButton({ systemImage, accessibilityLabel, onPress }: IconBut
         ]}>
         <Image
           systemName={systemImage}
-          modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(Colors.text), frame({ width: 26, height: 26 })]}
+          modifiers={[font({ size: 17, weight: 'medium' }), foregroundStyle(Colors.text), frame({ width: 30, height: 30 })]}
         />
       </Button>
     </Host>

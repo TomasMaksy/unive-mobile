@@ -54,7 +54,7 @@ function Avatar() {
   );
 }
 
-const AVATAR_SIZE = 40;
+const AVATAR_SIZE = 44;
 
 const styles = StyleSheet.create({
   header: {

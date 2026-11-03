@@ -36,7 +36,7 @@ export function ChatActions({ canStartNew, onNewChat, history, currentChatId, on
 
       {/* Slides over when the new chat button appears or goes. */}
       <Animated.View layout={LinearTransition.springify()} entering={FadeIn} exiting={FadeOut}>
-        {/* Same 40pt glass circle as IconButton, but it opens a native menu. */}
+        {/* Same 44pt glass circle as IconButton, but it opens a native menu. */}
         <Host matchContents ignoreSafeArea="all">
           <Menu
             modifiers={[
@@ -51,9 +51,9 @@ export function ChatActions({ canStartNew, onNewChat, history, currentChatId, on
               <Image
                 systemName="line.3.horizontal"
                 modifiers={[
-                  font({ size: 15, weight: 'semibold' }),
+                  font({ size: 17, weight: 'medium' }),
                   foregroundStyle(Colors.text),
-                  frame({ width: 26, height: 26 }),
+                  frame({ width: 30, height: 30 }),
                 ]}
               />
             }>
