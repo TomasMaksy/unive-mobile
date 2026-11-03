@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
 
-import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 
 type ButtonProps = PressableProps & {
   label: string;
@@ -34,9 +34,9 @@ export function Button({ label, variant = 'primary', loading, disabled, style, .
 
 const styles = StyleSheet.create({
   button: {
+    ...Shape.pill,
     minHeight: 48,
-    borderRadius: Radius.control,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
   },

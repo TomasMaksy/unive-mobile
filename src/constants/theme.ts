@@ -61,15 +61,19 @@ export const FontFiles = {
   [Fonts.sansSemiBold]: Inter_600SemiBold,
 };
 
-export const Radius = {
-  /** buttons and inputs (rounded-xl) */
-  control: 12,
+/**
+ * Corners use iOS's continuous curve (a squircle, like app icons) instead of
+ * a circular arc. Spread one into a style: `{ ...Shape.card, padding: 16 }`.
+ */
+export const Shape = {
+  /** buttons, inputs and chips: fully rounded ends */
+  pill: { borderRadius: 999, borderCurve: 'continuous' },
   /** cards */
-  card: 20,
-  /** the sign-in card (rounded-[28px]) */
-  panel: 28,
-  /** chat bubbles */
-  pill: 22,
+  card: { borderRadius: 24, borderCurve: 'continuous' },
+  /** large surfaces, like the sign-in card */
+  panel: { borderRadius: 32, borderCurve: 'continuous' },
+  /** chat bubbles and inputs that grow to several lines */
+  bubble: { borderRadius: 22, borderCurve: 'continuous' },
 } as const;
 
 export const Spacing = {

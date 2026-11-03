@@ -7,7 +7,7 @@ import { Button } from '@/components/button';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import { API_URL, authClient, signOutOnDevice } from '@/lib/auth-client';
 
 const PRIVACY_POLICY_URL = 'https://unive.ai/legal/privacy-policy';
@@ -190,8 +190,8 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: Spacing.three,
+    ...Shape.panel,
     padding: Spacing.four,
-    borderRadius: Radius.panel,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.backgroundElement,

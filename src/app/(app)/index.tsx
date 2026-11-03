@@ -11,7 +11,7 @@ import { Button } from '@/components/button';
 import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Shape, Spacing } from '@/constants/theme';
 import { authHeaders } from '@/lib/api';
 import { API_URL } from '@/lib/auth-client';
 
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   bubble: {
-    borderRadius: Radius.pill,
+    ...Shape.bubble,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     maxWidth: '85%',
@@ -196,6 +196,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
   },
   input: {
+    // Squircle rather than a pill, so it still looks right when it grows to several lines.
+    ...Shape.bubble,
     flex: 1,
     maxHeight: 140,
     paddingTop: 13,

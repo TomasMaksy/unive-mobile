@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Shape, Spacing } from '@/constants/theme';
 import { fetchCurrentPlan, type Plan, requestPlan, resolveTask, type Task } from '@/lib/action-plan';
 
 const POLL_INTERVAL_MS = 2_500;
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    borderRadius: Radius.card,
+    ...Shape.card,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: Spacing.three,
