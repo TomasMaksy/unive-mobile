@@ -16,7 +16,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { scheduleOnRN } from 'react-native-worklets';
+import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { AiChat } from '@/features/ai/ai-chat';
@@ -185,10 +185,14 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
             headerGesture={headerGesture}
             composerGesture={composerGesture}
             closing={closing}
-            onClose={() => {
-              Keyboard.dismiss();
-              close();
-            }}
+            // Like letting go of a drag: the panel starts closing (and holds its layout
+            // still) on the UI thread before the keyboard is told to go down.
+            onClose={() =>
+              scheduleOnUI(() => {
+                close();
+                scheduleOnRN(dismissKeyboard);
+              })
+            }
           />
         </Animated.View>
       </View>

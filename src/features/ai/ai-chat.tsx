@@ -44,6 +44,9 @@ const transport = new DefaultChatTransport<UIMessage>({
 });
 
 // Unive's olive (Colors.olive), at the strength the glow under the input starts from.
+// Come back to the AI after this long and it starts a fresh chat (the old one stays in the history).
+const NEW_CHAT_AFTER_MS = 30 * 60 * 1000;
+
 const GLOW = 'rgba(111, 118, 68, 0.3)';
 const CLEAR = 'rgba(111, 118, 68, 0)';
 // Colors.background, solid and see-through, for the fades at the top and bottom.
@@ -149,6 +152,19 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
       current = false;
     };
   }, [isOpen, busy]);
+
+  // When you last used this chat: a message going or coming, or closing the AI.
+  const lastUsed = useRef(0); // Set when the effects below first run.
+  useEffect(() => {
+    lastUsed.current = Date.now();
+  }, [messages]);
+  useEffect(() => {
+    if (!isOpen) {
+      lastUsed.current = Date.now();
+    } else if (Date.now() - lastUsed.current > NEW_CHAT_AFTER_MS) {
+      setChat({ id: randomUUID(), messages: [] });
+    }
+  }, [isOpen]);
 
   function startNewChat() {
     if (busy) stop();
