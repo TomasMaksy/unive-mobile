@@ -151,8 +151,8 @@ export default function SignInScreen() {
 
             {__DEV__ && (
               <ThemedText type="small" themeColor="textMuted" style={styles.center}>
-                {API_URL.startsWith('http://localhost')
-                  ? `Local backend (${API_URL}): the code is printed as [OTP] in the terminal running bun dev.`
+                {API_URL.startsWith('http://')
+                  ? `Local backend (${API_URL}): the code is printed as [OTP] in the terminal running npm run dev.`
                   : `Backend: ${API_URL}. Codes are sent by real email.`}
               </ThemedText>
             )}

@@ -1,190 +1,153 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport, type UIMessage } from 'ai';
+import { randomUUID } from 'expo-crypto';
+import { fetch as expoFetch } from 'expo/fetch';
+import { useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-import { fetchCurrentPlan, type Plan, requestPlan, resolveTask, type Task } from '@/lib/action-plan';
+import { authHeaders } from '@/lib/api';
+import { API_URL } from '@/lib/auth-client';
 
-const POLL_INTERVAL_MS = 2_500;
+// Same request the web app's global chat sends (unive-v22/src/features/chat/utils/create-chat.ts):
+// the server stores the conversation, so only the newest message goes up.
+const transport = new DefaultChatTransport<UIMessage>({
+  api: `${API_URL}/api/chat`,
+  // expo/fetch streams the reply; React Native's fetch would wait for all of it.
+  fetch: expoFetch as unknown as typeof globalThis.fetch,
+  prepareSendMessagesRequest: async ({ id, messages }) => ({
+    credentials: 'omit',
+    headers: await authHeaders(),
+    body: { chatId: id, messages: messages.slice(-1), agent: 'global' },
+  }),
+});
 
-export default function TodayScreen() {
-  const [plan, setPlan] = useState<Plan | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function ChatScreen() {
+  // The app-wide safe area only knows about the notch and the home indicator.
+  // A provider inside the tab measures this screen itself, which on iOS
+  // includes the tab bar floating over its bottom edge.
+  return (
+    <SafeAreaProvider>
+      <Chat />
+    </SafeAreaProvider>
+  );
+}
 
-  const load = useCallback(
-    () =>
-      fetchCurrentPlan()
-        .then(async (current) => setPlan(current ?? (await requestPlan())))
-        .then(() => setError(null))
-        .catch((e) => setError(e instanceof Error ? e.message : 'Could not load your plan.')),
-    [],
+function Chat() {
+  const insets = useSafeAreaInsets();
+  const keyboard = useAnimatedKeyboard();
+  // Sit above the tab bar, or above the keyboard while it's open (it covers
+  // the tab bar). Runs on the UI thread, so it follows the keyboard smoothly.
+  const composerStyle = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(keyboard.height.value, insets.bottom) + Spacing.two,
+  }));
+  const [chatId, setChatId] = useState(randomUUID);
+  const [input, setInput] = useState('');
+  const listRef = useRef<FlatList<UIMessage>>(null);
+
+  const { messages, sendMessage, status, error, stop } = useChat({
+    id: chatId,
+    transport,
+    // unive-v2 requires UUID message ids.
+    generateId: randomUUID,
+  });
+  const busy = status === 'submitted' || status === 'streaming';
+
+  const visible = useMemo(
+    () => messages.filter((m) => m.parts.some((p) => p.type === 'text' && p.text.trim())),
+    [messages],
   );
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
-
-  // A new plan takes a while to generate; check back until it's ready.
-  useEffect(() => {
-    if (plan?.status !== 'generating') return;
-    const timer = setTimeout(() => {
-      fetchCurrentPlan()
-        .then(setPlan)
-        .catch(() => setPlan({ ...plan }));
-    }, POLL_INTERVAL_MS);
-    return () => clearTimeout(timer);
-  }, [plan]);
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
-
-  async function retry() {
-    setLoading(true);
-    try {
-      setPlan(await requestPlan());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not start a new plan.');
-    } finally {
-      setLoading(false);
-    }
+  function send() {
+    const text = input.trim();
+    if (!text || busy) return;
+    setInput('');
+    sendMessage({ text, metadata: { createdAt: new Date().toISOString() } });
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.textSecondary} />}>
-          <ThemedText type="subtitle">Today</ThemedText>
+    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <ThemedText type="subtitle">Chat</ThemedText>
+        {messages.length > 0 && (
+          <Button
+            label="New chat"
+            variant="secondary"
+            disabled={busy}
+            onPress={() => setChatId(randomUUID())}
+          />
+        )}
+      </View>
 
-          {loading ? (
-            <ActivityIndicator color={Colors.text} style={styles.spinner} />
-          ) : error ? (
-            <ThemedText themeColor="textSecondary">{error}</ThemedText>
-          ) : !plan ? (
-            <ThemedText themeColor="textSecondary">No plan yet. Pull down to try again.</ThemedText>
-          ) : plan.status === 'generating' ? (
-            <View style={styles.row}>
-              <ActivityIndicator color={Colors.textSecondary} />
-              <ThemedText themeColor="textSecondary">Putting together today’s plan…</ThemedText>
-            </View>
-          ) : plan.status === 'failed' ? (
-            <>
-              <ThemedText themeColor="textSecondary">We couldn’t build today’s plan.</ThemedText>
-              {plan.canRetry && <Button label="Try again" onPress={retry} />}
-            </>
-          ) : (
-            <>
-              {plan.summary && <ThemedText themeColor="textSecondary">{plan.summary}</ThemedText>}
-              {plan.tasks.map((task) => (
-                <TaskCard key={task.id} task={task} onPlanChange={setPlan} />
-              ))}
-              {plan.status === 'completed' && (
-                <ThemedText themeColor="textSecondary">All done for today. Nice work.</ThemedText>
-              )}
-            </>
-          )}
-        </ScrollView>
-      </SafeAreaView>
+      <FlatList
+        ref={listRef}
+        data={visible}
+        keyExtractor={(m) => m.id}
+        contentContainerStyle={styles.list}
+        // The composer already keeps clear of the tab bar; iOS shouldn't pad the list for it too.
+        contentInsetAdjustmentBehavior="never"
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        // Keep the newest message in view when the keyboard opens and the list shrinks.
+        onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+        ListEmptyComponent={
+          <ThemedText themeColor="textSecondary">
+            Ask anything about your applications, essays or deadlines.
+          </ThemedText>
+        }
+        renderItem={({ item }) => <Message message={item} />}
+        ListFooterComponent={
+          <>
+            {status === 'submitted' && <ActivityIndicator color={Colors.textSecondary} style={styles.thinking} />}
+            {error && (
+              <ThemedText type="small" themeColor="destructive" style={styles.error}>
+                {error.message || 'Something went wrong. Try again.'}
+              </ThemedText>
+            )}
+          </>
+        }
+      />
+
+      <Animated.View style={[styles.composer, composerStyle]}>
+        <TextField
+          style={styles.input}
+          placeholder="Message Unive"
+          multiline
+          value={input}
+          onChangeText={setInput}
+        />
+        {busy ? (
+          <Button label="Stop" variant="secondary" onPress={stop} />
+        ) : (
+          <Button label="Send" disabled={!input.trim()} onPress={send} />
+        )}
+      </Animated.View>
     </ThemedView>
   );
 }
 
-function TaskCard({ task, onPlanChange }: { task: Task; onPlanChange: (plan: Plan | null) => void }) {
-  const [expanded, setExpanded] = useState(false);
-  const [saving, setSaving] = useState<'completed' | 'skipped' | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const resolved = task.status !== 'open';
-  const isDeadline = task.timing?.kind === 'verified_deadline';
+function Message({ message }: { message: UIMessage }) {
+  const mine = message.role === 'user';
+  // Tool cards (open a page, ask for input, …) are web-only for now; show the text.
+  const text = message.parts
+    .flatMap((p) => (p.type === 'text' ? [p.text] : []))
+    .join('\n\n')
+    .trim();
 
-  async function resolve(status: 'completed' | 'skipped') {
-    setSaving(status);
-    setError(null);
-    try {
-      onPlanChange(await resolveTask(task.id, status, status === 'skipped' ? 'cant_do_now' : undefined));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not update the task.');
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  return (
-    <ThemedView type="backgroundElement" style={[styles.card, resolved && styles.resolved]}>
-      <Pressable onPress={() => setExpanded((value) => !value)} style={styles.cardHeader}>
-        <ThemedText type="smallBold" style={task.status === 'completed' && styles.done}>
-          {task.title}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {[
-            task.timing?.label,
-            `${task.estimatedMinutes} min`,
-            task.status === 'skipped' ? 'Skipped' : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </ThemedText>
-        {isDeadline && task.timing?.date && (
-          <ThemedText type="small" themeColor="brandBlue">
-            Deadline {task.timing.date}
-            {task.timing.sourceLabel ? ` (${task.timing.sourceLabel})` : ''}
-          </ThemedText>
-        )}
-      </Pressable>
-
-      {expanded && (
-        <View style={styles.details}>
-          <ThemedText type="small">{task.whyNow}</ThemedText>
-          {task.instructions.map((step, i) => (
-            <ThemedText key={i} type="small" themeColor="textSecondary">
-              {i + 1}. {step}
-            </ThemedText>
-          ))}
-          <ThemedText type="small" themeColor="textSecondary">
-            Done when: {task.definitionOfDone}
-          </ThemedText>
-          {task.executionMode === 'in_unive' && (
-            <ThemedText type="small" themeColor="textSecondary">
-              This one happens on the Unive website.
-            </ThemedText>
-          )}
-        </View>
-      )}
-
-      {error && (
-        <ThemedText type="small" themeColor="destructive">
-          {error}
-        </ThemedText>
-      )}
-
-      {!resolved && (
-        <View style={styles.row}>
-          <Button
-            label="Done"
-            style={styles.flex}
-            loading={saving === 'completed'}
-            disabled={!!saving}
-            onPress={() => resolve('completed')}
-          />
-          <Button
-            label="Skip"
-            variant="secondary"
-            style={styles.flex}
-            loading={saving === 'skipped'}
-            disabled={!!saving}
-            onPress={() => resolve('skipped')}
-          />
-        </View>
-      )}
-    </ThemedView>
+  // Like the website: your messages sit in a white pill, replies are plain text.
+  return mine ? (
+    <View style={[styles.bubble, styles.mine]}>
+      <ThemedText>{text}</ThemedText>
+    </View>
+  ) : (
+    <ThemedText style={styles.theirs}>{text}</ThemedText>
   );
 }
 
@@ -192,39 +155,50 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    gap: Spacing.three,
-    // iOS adds the tab bar's height below this list by itself (automatic content insets).
-    padding: Spacing.four,
-  },
-  spinner: {
-    marginTop: Spacing.five,
-  },
-  row: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
   },
-  flex: {
-    flex: 1,
+  list: {
+    gap: Spacing.four,
+    padding: Spacing.four,
   },
-  card: {
-    borderRadius: Radius.card,
+  bubble: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    maxWidth: '85%',
+  },
+  mine: {
+    alignSelf: 'flex-end',
+    backgroundColor: Colors.backgroundElement,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: Spacing.three,
-    gap: Spacing.three,
   },
-  cardHeader: {
-    gap: Spacing.one,
+  theirs: {
+    alignSelf: 'flex-start',
   },
-  resolved: {
-    opacity: 0.6,
+  thinking: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.two,
   },
-  done: {
-    textDecorationLine: 'line-through',
+  error: {
+    marginTop: Spacing.two,
   },
-  details: {
+  composer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+  },
+  input: {
+    flex: 1,
+    maxHeight: 140,
+    paddingTop: 13,
+    paddingBottom: 13,
   },
 });

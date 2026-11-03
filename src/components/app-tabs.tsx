@@ -9,16 +9,9 @@ export default function AppTabs() {
       backgroundColor={Colors.background}
       indicatorColor={Colors.backgroundSelected}
       labelStyle={{ fontFamily: Fonts.sansMedium }}>
+      {/* Today (the action plan) is hidden for now: the website doesn't show it yet.
+          Its screen is kept in src/features/today. */}
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Today</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          sf="checklist"
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="chat">
         <NativeTabs.Trigger.Label>Chat</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf="bubble.left.and.bubble.right"
