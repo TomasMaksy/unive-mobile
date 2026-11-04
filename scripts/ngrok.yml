@@ -1,0 +1,24 @@
+# Used by `npm run dev:remote` (scripts/dev.sh): puts the app and unive-v2 on
+# one public address, so Expo Go works on any network.
+# Your ngrok sign-in (authtoken) stays in ngrok's own config file.
+version: 3
+endpoints:
+  # Metro serves the app's code to Expo Go. Requests for /api/… go on to
+  # unive-v2 (sign-in, chat, profile), the way unive.ai serves both.
+  - name: unive-mobile
+    url: https://scepterless-darrin-subparallel.ngrok-free.dev
+    upstream:
+      url: 8081
+    traffic_policy:
+      on_http_request:
+        - expressions:
+            - "req.url.path.startsWith('/api/')"
+          actions:
+            - type: forward-internal
+              config:
+                url: https://unive-v2.internal
+  # unive-v2 (Next.js), reachable only through the address above.
+  - name: unive-v2
+    url: https://unive-v2.internal
+    upstream:
+      url: 3000
