@@ -3,14 +3,15 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuideBlocks } from '@/components/guide-blocks';
 import { IconButton } from '@/components/icon-button';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { GuideContents } from '@/features/guide/guide-contents';
 import { GuideListenBar } from '@/features/guide/guide-listen-bar';
 import {
   fetchGuideAudio,
@@ -27,7 +28,8 @@ const LISTEN_BAR_SPACE = 96;
 
 /**
  * One guide topic, read like an App Store story: it zooms open from its card,
- * the picture on top, then the lesson. A contents card jumps to a section,
+ * the picture on top, then the lesson. Once you scroll in, a contents pill
+ * at the top names your section and jumps to any other,
  * and the narrator can read it aloud.
  */
 export default function GuideTopicScreen() {
@@ -46,6 +48,9 @@ export default function GuideTopicScreen() {
   const [audio, setAudio] = useState<GuideAudioSegment[]>([]);
   const [listenRequest, setListenRequest] = useState<{ id: string; n: number } | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  // The section at the top of the screen, and whether the contents pill shows (past the title).
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [showContents, setShowContents] = useState(false);
 
   useEffect(() => {
     fetchGuideTopic(topicId).then(
@@ -80,11 +85,26 @@ export default function GuideTopicScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playingId]);
 
+  function onScroll(y: number) {
+    if (!topic) return;
+    const reading = y + insets.top + Spacing.six + 1;
+    let found = topic.sections[0]?.id ?? null;
+    for (const section of topic.sections) {
+      const top = sectionY.current[section.id];
+      if (top !== undefined && articleY.current + top <= reading) found = section.id;
+    }
+    if (found !== currentId) setCurrentId(found);
+    const past = y > articleY.current;
+    if (past !== showContents) setShowContents(past);
+  }
+
   return (
     <View style={styles.screen}>
       <ScrollView
         ref={scrollRef}
         contentInsetAdjustmentBehavior="never"
+        scrollEventThrottle={32}
+        onScroll={(event) => onScroll(event.nativeEvent.contentOffset.y)}
         contentContainerStyle={{ paddingBottom: insets.bottom + LISTEN_BAR_SPACE }}>
         {/* The card's picture grows into this one (Apple's zoom transition). The
             illustrations are cut-outs, shown whole on the page. */}
@@ -116,23 +136,6 @@ export default function GuideTopicScreen() {
 
             {topic.intro.length > 0 && <GuideBlocks blocks={topic.intro} />}
 
-            <Animated.View entering={FadeInDown.delay(120)} style={styles.contents}>
-              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.contentsTitle}>
-                IN THIS GUIDE
-              </ThemedText>
-              {topic.sections.map((section, index) => (
-                <Pressable
-                  key={section.id}
-                  onPress={() => scrollTo(section.id)}
-                  style={({ pressed }) => [styles.contentsRow, index > 0 && styles.contentsDivider, pressed && styles.pressed]}>
-                  <ThemedText style={styles.contentsEmoji}>{section.emoji ?? '•'}</ThemedText>
-                  <ThemedText style={styles.contentsLabel} numberOfLines={2}>
-                    {section.tocTitle}
-                  </ThemedText>
-                  <SymbolView name="chevron.down" size={12} tintColor={Colors.textMuted} style={styles.chevron} />
-                </Pressable>
-              ))}
-            </Animated.View>
 
             {topic.sections.map((section) => (
               <View
@@ -179,10 +182,22 @@ export default function GuideTopicScreen() {
       </ScrollView>
 
       {/* Keeps the status bar readable over the text scrolling under it. */}
-      <View pointerEvents="none" style={[styles.topFade, { height: insets.top + Spacing.five + Spacing.three }]} />
+      <View pointerEvents="none" style={[styles.topFade, { height: insets.top + 84 }]} />
       <View style={[styles.close, { top: insets.top + Spacing.two }]}>
         <IconButton systemImage="xmark" accessibilityLabel="Close" onPress={() => router.back()} />
       </View>
+      {topic && showContents ? (
+        <Animated.View
+          entering={FadeInUp.springify().damping(18)}
+          exiting={FadeOutUp.duration(160)}
+          style={[styles.contents, { top: insets.top + Spacing.two }]}>
+          <GuideContents
+            sections={topic.sections.map(({ id, tocTitle, emoji }) => ({ id, title: tocTitle, emoji }))}
+            currentId={currentId}
+            onSelect={scrollTo}
+          />
+        </Animated.View>
+      ) : null}
 
       {audio.length > 0 && (
         <GuideListenBar segments={audio} request={listenRequest} onSegmentChange={onSegmentChange} bottomInset={insets.bottom} />
@@ -218,44 +233,6 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 17,
     lineHeight: 25,
-  },
-  contents: {
-    ...Shape.card,
-    backgroundColor: Colors.backgroundElement,
-    paddingVertical: Spacing.two,
-  },
-  contentsTitle: {
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.one,
-    letterSpacing: 0.4,
-  },
-  contentsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three - Spacing.one,
-  },
-  contentsDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
-    marginLeft: Spacing.three,
-    paddingLeft: 0,
-  },
-  pressed: {
-    backgroundColor: Colors.backgroundSelected,
-  },
-  contentsEmoji: {
-    width: 24,
-    textAlign: 'center',
-  },
-  contentsLabel: {
-    flex: 1,
-  },
-  chevron: {
-    width: 14,
-    height: 14,
   },
   section: {
     gap: Spacing.three,
@@ -293,11 +270,16 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    experimental_backgroundImage: `linear-gradient(180deg, ${Colors.background} 55%, rgba(249, 249, 247, 0))`,
+    experimental_backgroundImage: `linear-gradient(180deg, ${Colors.background} 62%, rgba(249, 249, 247, 0.85) 78%, rgba(249, 249, 247, 0))`,
   },
   close: {
     position: 'absolute',
     left: Spacing.four,
+  },
+  // Beside the close button, the same height.
+  contents: {
+    position: 'absolute',
+    right: Spacing.four,
   },
   status: {
     alignItems: 'center',
