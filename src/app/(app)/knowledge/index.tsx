@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { PressableScale } from '@/components/pressable-scale';
@@ -11,6 +11,7 @@ import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import { Bookshelf } from '@/features/knowledge/bookshelf';
 import { schoolLabel, toSchool } from '@/features/knowledge/about';
 import { countryName } from '@/features/knowledge/country';
+import { isWorking, mergedConflicts, useUploads } from '@/features/knowledge/dropzone';
 import { countOf, SECTION_ICON, SECTION_ORDER, SECTIONS } from '@/features/knowledge/sections';
 import { siteUrl } from '@/lib/guide';
 import { EDUCATION_STAGES, type Knowledge, type KnowledgeKind, refreshKnowledge, useKnowledge } from '@/lib/knowledge';
@@ -115,32 +116,33 @@ function Header({ knowledge }: { knowledge: Knowledge }) {
   );
 }
 
-// The website's Dropzone, its own card rather than a tab. Uploading comes later.
+// The website's Dropzone, its own card rather than a tab.
 function DropzoneCard() {
+  const router = useRouter();
+  const uploads = useUploads();
+  const reading = uploads.filter(isWorking).length;
+  const toCheck = mergedConflicts(uploads).length;
+  const status = reading
+    ? `Reading ${reading} ${reading === 1 ? 'document' : 'documents'}…`
+    : toCheck
+      ? `${toCheck} to check`
+      : 'Your CV, transcripts or certificates, and Unive fills in the rest.';
+
   return (
     <PressableScale
       haptic
       accessibilityRole="button"
-      accessibilityLabel="Add documents, coming soon"
-      onPress={() =>
-        Alert.alert(
-          'Coming soon',
-          'Soon you’ll be able to scan or upload your CV, transcripts and certificates here, and Unive will fill in your library. For now, you can upload them on the website.',
-        )
-      }
+      accessibilityLabel="Add documents"
+      onPress={() => router.push('/knowledge/dropzone')}
       style={[styles.card, styles.dropzone]}>
       <Image source={{ uri: siteUrl('/isomorphic-icons/cv.webp') }} style={styles.dropzoneArt} contentFit="contain" />
       <View style={styles.flex}>
-        <View style={styles.dropzoneTitleRow}>
-          <ThemedText style={styles.cardTitle}>Add documents</ThemedText>
-          <View style={styles.soon}>
-            <ThemedText style={styles.soonText}>Soon</ThemedText>
-          </View>
-        </View>
-        <ThemedText type="small" themeColor="textSecondary">
-          Your CV, transcripts or certificates, and Unive fills in the rest.
+        <ThemedText style={styles.cardTitle}>Add documents</ThemedText>
+        <ThemedText type="small" themeColor={reading || toCheck ? 'olive' : 'textSecondary'}>
+          {status}
         </ThemedText>
       </View>
+      {reading ? <ActivityIndicator size="small" color={Colors.olive} /> : null}
     </PressableScale>
   );
 }
@@ -261,9 +263,6 @@ const styles = StyleSheet.create({
     borderColor: '#c5c9a4',
   },
   dropzoneArt: { width: 60, height: 60 },
-  dropzoneTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  soon: { ...Shape.pill, paddingHorizontal: Spacing.two, paddingVertical: 1, backgroundColor: Colors.olive },
-  soonText: { fontFamily: Fonts.sansSemiBold, fontSize: 11, lineHeight: 16, color: '#fff' },
   about: { padding: Spacing.three, paddingLeft: Spacing.three + Spacing.one, gap: Spacing.three },
   aboutTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   chevron: { fontSize: 26, lineHeight: 28 },

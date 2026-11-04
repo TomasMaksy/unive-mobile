@@ -36,6 +36,8 @@ export default function SignedInLayout() {
       <Stack.Screen name="knowledge/pick" options={linkedScreen} />
       {/* Your stage of education: high school or college, then which year. */}
       <Stack.Screen name="knowledge/stage" options={linkedScreen} />
+      {/* Adding documents for Unive to read (the website's Dropzone). */}
+      <Stack.Screen name="knowledge/dropzone" options={{ ...linkedScreen, headerBackTitle: 'Library' }} />
       <Stack.Screen name="guide/index" options={linkedScreen} />
       {/* Zooms open from its card (Apple's zoom transition), so no navigation header
           (it would stay put while the page zooms); the page has its own close button. */}

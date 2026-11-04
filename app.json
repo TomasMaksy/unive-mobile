@@ -37,8 +37,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Unive uses your photos to set your profile picture.",
-          "cameraPermission": "Unive uses the camera to take your profile picture.",
+          "photosPermission": "Unive uses your photos for your profile picture and for documents you add to your Knowledge Library.",
+          "cameraPermission": "Unive uses the camera for your profile picture and to scan documents for your Knowledge Library.",
           "microphonePermission": false
         }
       ],
