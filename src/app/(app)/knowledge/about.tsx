@@ -1,48 +1,112 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-import { KnowledgeForm } from '@/components/knowledge-form';
+import { AboutForm } from '@/components/about-form';
 import { TextFieldRegistry, useTextFieldValues } from '@/components/native-text-field-types';
 import { PageTitle } from '@/components/page-title';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
-import { ACADEMICS_FORM, academicsDraft, parseAcademics } from '@/features/knowledge/academics';
+import {
+  type AboutDraft,
+  aboutDraft,
+  aboutProblem,
+  loadPlaces,
+  needsUniversity,
+  type Place,
+  placeName,
+  saveAbout,
+  type School,
+  schoolLabel,
+  type StudyInterest,
+} from '@/features/knowledge/about';
+import { academicsDraft, parseAcademics } from '@/features/knowledge/academics';
 import { countryName } from '@/features/knowledge/country';
+import { pickFrom, type PickKind } from '@/features/knowledge/picker';
 import { siteUrl } from '@/lib/guide';
-import { EDUCATION_STAGES, type Knowledge, saveAcademics, schoolName, useKnowledge } from '@/lib/knowledge';
+import { EDUCATION_STAGES, type Knowledge, useKnowledge } from '@/lib/knowledge';
 import type { Draft, DraftValue } from '@/lib/knowledge-fields';
+
+type Editing = { draft: AboutDraft; scores: Draft };
 
 /**
  * About you: your education, where you live, your scores and what you'd like
- * to study (the website's General tab). Edit changes the scores in place.
+ * to study (the website's General tab). Edit turns the page into a form;
+ * schools, places and interests are chosen on a search page.
  */
 export default function KnowledgeAboutScreen() {
+  const router = useRouter();
   const knowledge = useKnowledge();
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [editing, setEditing] = useState<Editing | null>(null);
   const [saving, setSaving] = useState(false);
+  // Country and state names come from unive-v2; shown once they've loaded.
+  const [, setPlacesLoaded] = useState(false);
   const fields = useTextFieldValues();
+
+  useEffect(() => {
+    loadPlaces().then(
+      () => setPlacesLoaded(true),
+      () => {},
+    );
+  }, []);
+
   if (!knowledge) return null;
-  const editing = draft !== null;
-  const before = knowledge.static.academics;
+
+  function startEditing() {
+    void Haptics.selectionAsync();
+    setEditing({ draft: aboutDraft(knowledge!), scores: academicsDraft(knowledge!.static.academics) });
+  }
+
+  async function pick(kind: PickKind) {
+    if (!editing) return;
+    const value = await pickFrom(router, kind, { country: editing.draft.country, state: editing.draft.state });
+    if (!value) return;
+    setEditing((current) => {
+      if (!current) return current;
+      const draft = current.draft;
+      switch (kind) {
+        case 'highSchool':
+          return { ...current, draft: { ...draft, highSchool: value as School } };
+        case 'university':
+          return { ...current, draft: { ...draft, university: value as School } };
+        case 'country': {
+          const code = (value as Place).code;
+          return { ...current, draft: { ...draft, country: code, state: code === 'US' ? draft.state : null } };
+        }
+        case 'state':
+          return { ...current, draft: { ...draft, state: (value as Place).code } };
+        case 'interest': {
+          const interest = value as StudyInterest;
+          if (draft.interests.some((entry) => entry.cipCode === interest.cipCode)) return current;
+          return { ...current, draft: { ...draft, interests: [...draft.interests, interest] } };
+        }
+      }
+    });
+  }
 
   async function save() {
-    // The exact text in each field, including a last keystroke not yet reported.
-    const latest = parseAcademics({ ...draft, ...fields.read() });
-    if (!latest) {
+    if (!editing) return;
+    const problem = aboutProblem(editing.draft);
+    // The exact text in each score field, including a last keystroke not yet reported.
+    const scores = parseAcademics({ ...editing.scores, ...fields.read() });
+    if (problem) {
+      Alert.alert('Almost there', problem);
+      return;
+    }
+    if (!scores) {
       Alert.alert('Check your scores', 'GPA goes up to 4.00, ACT from 1 to 36, and each SAT part from 200 to 800.');
       return;
     }
     setSaving(true);
     try {
-      await saveAcademics(before, latest);
+      await saveAbout(aboutDraft(knowledge!), editing.draft, { before: knowledge!.static.academics, after: scores });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setDraft(null);
+      setEditing(null);
     } catch (error) {
-      Alert.alert("Couldn't save your scores", error instanceof Error ? error.message : 'Please try again.');
+      Alert.alert("Couldn't save", error instanceof Error ? error.message : 'Please try again.');
     } finally {
       setSaving(false);
     }
@@ -53,47 +117,47 @@ export default function KnowledgeAboutScreen() {
       <Stack.Screen
         options={{
           headerBackTitle: 'Library',
+          // While editing, Cancel replaces the back button (and the swipe back).
           headerBackVisible: !editing,
           gestureEnabled: !editing,
-          headerTitle: editing ? 'Edit Scores' : '',
+          headerTitle: editing ? 'Edit About You' : '',
         }}
       />
       {editing ? (
         <>
           <Stack.Toolbar placement="left">
-            <Stack.Toolbar.Button onPress={() => setDraft(null)}>Cancel</Stack.Toolbar.Button>
+            <Stack.Toolbar.Button onPress={() => setEditing(null)}>Cancel</Stack.Toolbar.Button>
           </Stack.Toolbar>
           <Stack.Toolbar placement="right">
-            <Stack.Toolbar.Button variant="prominent" tintColor={Colors.olive} disabled={saving || parseAcademics(draft) === null} onPress={save}>
+            <Stack.Toolbar.Button variant="prominent" tintColor={Colors.olive} disabled={saving} onPress={save}>
               {saving ? 'Saving…' : 'Done'}
             </Stack.Toolbar.Button>
           </Stack.Toolbar>
         </>
       ) : (
         <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button
-            onPress={() => {
-              void Haptics.selectionAsync();
-              setDraft(academicsDraft(before));
-            }}>
-            Edit
-          </Stack.Toolbar.Button>
+          <Stack.Toolbar.Button onPress={startEditing}>Edit</Stack.Toolbar.Button>
         </Stack.Toolbar>
       )}
 
       {editing ? (
-        <Animated.View key="edit" entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)} style={styles.flex}>
+        <Animated.View key="edit" entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={styles.flex}>
           <TextFieldRegistry value={fields.registry}>
-            <KnowledgeForm
-              sections={ACADEMICS_FORM}
-              draft={draft}
-              onChange={(key: string, value: DraftValue) => setDraft((current) => (current ? { ...current, [key]: value } : current))}
-              activities={[]}
+            <AboutForm
+              draft={editing.draft}
+              onChange={(draft) => setEditing((current) => (current ? { ...current, draft } : current))}
+              scores={editing.scores}
+              onScoreChange={(key: string, value: DraftValue) =>
+                setEditing((current) => (current ? { ...current, scores: { ...current.scores, [key]: value } } : current))
+              }
+              onPick={(kind) => void pick(kind)}
+              countryLabel={placeName('country', editing.draft.country) ?? countryName(editing.draft.country)}
+              stateLabel={placeName('state', editing.draft.state) ?? editing.draft.state}
             />
           </TextFieldRegistry>
         </Animated.View>
       ) : (
-        <Animated.View key="view" entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)} style={styles.flex}>
+        <Animated.View key="view" entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={styles.flex}>
           <AboutView knowledge={knowledge} />
         </Animated.View>
       )}
@@ -102,9 +166,8 @@ export default function KnowledgeAboutScreen() {
 }
 
 function AboutView({ knowledge }: { knowledge: Knowledge }) {
-  const { academics, education, location } = knowledge.static;
-  const highSchool = schoolName(education.highSchool);
-  const university = schoolName(education.university);
+  const { academics } = knowledge.static;
+  const about = aboutDraft(knowledge);
   const score = (value: number | null) => (value == null ? null : String(value));
 
   return (
@@ -117,11 +180,14 @@ function AboutView({ knowledge }: { knowledge: Knowledge }) {
       </View>
 
       <Card icon="/isomorphic-icons/school.webp" title="Education">
-        <Row label="Stage" value={education.educationStage ? EDUCATION_STAGES[education.educationStage] ?? null : null} />
-        {highSchool || !university ? <Row label="High school" value={highSchool} /> : null}
-        {university ? <Row label="University" value={university} /> : null}
-        <Row label="Country" value={countryName(location.country)} />
-        {location.country === 'US' ? <Row label="State" value={location.state ?? null} /> : null}
+        <Row label="Stage" value={about.stage ? (EDUCATION_STAGES[about.stage] ?? null) : null} />
+        <Row label="High school" value={schoolLabel(about.highSchool)} />
+        {needsUniversity(about.stage) ? <Row label="University" value={schoolLabel(about.university)} /> : null}
+      </Card>
+
+      <Card icon="/isomorphic-icons/map.webp" title="Location">
+        <Row label="Country" value={placeName('country', about.country) ?? countryName(about.country)} />
+        {about.country === 'US' ? <Row label="State" value={placeName('state', about.state) ?? about.state} /> : null}
       </Card>
 
       <Card icon="/isomorphic-icons/academic-achievements.webp" title="Scores">
@@ -132,11 +198,11 @@ function AboutView({ knowledge }: { knowledge: Knowledge }) {
       </Card>
 
       <Card icon="/isomorphic-icons/lightbulb.webp" title="Study interests">
-        {knowledge.studyInterests.length === 0 ? (
-          <ThemedText themeColor="textMuted">None yet</ThemedText>
+        {about.interests.length === 0 ? (
+          <ThemedText themeColor="textMuted">None yet. Tap Edit to add what you’d like to study.</ThemedText>
         ) : (
           <View style={styles.chips}>
-            {knowledge.studyInterests.map((interest) => (
+            {about.interests.map((interest) => (
               <View key={interest.cipCode} style={styles.chip}>
                 <ThemedText type="small">{interest.name}</ThemedText>
               </View>
@@ -144,10 +210,6 @@ function AboutView({ knowledge }: { knowledge: Knowledge }) {
           </View>
         )}
       </Card>
-
-      <ThemedText type="small" themeColor="textMuted" style={styles.footnote}>
-        Changing your school, location and study interests in the app is coming soon. You can change them on the website.
-      </ThemedText>
     </ScrollView>
   );
 }
@@ -207,6 +269,6 @@ const styles = StyleSheet.create({
   rowLabel: { flexShrink: 0 },
   rowValue: { flexShrink: 1, textAlign: 'right' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  chip: { ...Shape.pill, backgroundColor: Colors.backgroundGrouped, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 1 },
-  footnote: { paddingHorizontal: Spacing.one },
+  // Rounded rather than a pill: long subject names wrap onto two lines.
+  chip: { borderRadius: 14, borderCurve: 'continuous', backgroundColor: Colors.backgroundGrouped, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 1 },
 });

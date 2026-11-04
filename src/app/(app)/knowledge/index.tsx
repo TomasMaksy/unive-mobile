@@ -9,10 +9,11 @@ import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import { Bookshelf } from '@/features/knowledge/bookshelf';
+import { schoolLabel, toSchool } from '@/features/knowledge/about';
 import { countryName } from '@/features/knowledge/country';
 import { countOf, SECTION_ICON, SECTION_ORDER, SECTIONS } from '@/features/knowledge/sections';
 import { siteUrl } from '@/lib/guide';
-import { EDUCATION_STAGES, type Knowledge, type KnowledgeKind, refreshKnowledge, schoolName, useKnowledge } from '@/lib/knowledge';
+import { EDUCATION_STAGES, type Knowledge, type KnowledgeKind, refreshKnowledge, useKnowledge } from '@/lib/knowledge';
 
 const TITLE_SIZE = 32;
 const PERCENT_SIZE = 26;
@@ -148,7 +149,7 @@ function DropzoneCard() {
 function AboutCard({ knowledge }: { knowledge: Knowledge }) {
   const router = useRouter();
   const { academics, education, location } = knowledge.static;
-  const school = schoolName(education.highSchool) ?? schoolName(education.university);
+  const school = schoolLabel(toSchool(education.university)) ?? schoolLabel(toSchool(education.highSchool));
   const stage = education.educationStage ? EDUCATION_STAGES[education.educationStage] : null;
   const where = [location.country === 'US' ? location.state : null, countryName(location.country)].filter(Boolean).join(', ');
   const sat = academics.satReading != null && academics.satMath != null ? academics.satReading + academics.satMath : null;

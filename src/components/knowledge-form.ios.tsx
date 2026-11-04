@@ -71,7 +71,7 @@ export function KnowledgeForm({ sections, draft, onChange, activities, onDelete,
   );
 }
 
-function FieldRow({
+export function FieldRow({
   field,
   value,
   onChange,

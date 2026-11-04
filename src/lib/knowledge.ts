@@ -156,10 +156,20 @@ function set(next: Knowledge) {
   listeners.forEach((listener) => listener());
 }
 
+let loading: Promise<void> | null = null;
+
+/** The library, loading it if no page has yet (say, a page opened from a link). */
 export function useKnowledge() {
   return useSyncExternalStore(
     (listener) => {
       listeners.add(listener);
+      if (!current && !loading) {
+        loading = refreshKnowledge()
+          .catch(() => {})
+          .finally(() => {
+            loading = null;
+          });
+      }
       return () => listeners.delete(listener);
     },
     () => current,
@@ -205,8 +215,8 @@ export function deleteItem(kind: KnowledgeKind, id: string) {
   return write(kind, 'DELETE', { id });
 }
 
-/** Saves each changed score (the website saves them one at a time too). */
-export async function saveAcademics(before: Academics, after: Academics) {
+/** Saves each changed score (the website saves them one at a time too), then reloads unless told not to. */
+export async function saveAcademics(before: Academics, after: Academics, { reload = true } = {}) {
   const fields = (Object.keys(after) as (keyof Academics)[]).filter((field) => before[field] !== after[field]);
   for (const field of fields) {
     await apiFetch('/api/mobile/knowledge/academics', {
@@ -214,7 +224,7 @@ export async function saveAcademics(before: Academics, after: Academics) {
       body: JSON.stringify({ field, value: after[field] ?? '' }),
     });
   }
-  if (fields.length) await refreshKnowledge();
+  if (fields.length && reload) await refreshKnowledge();
 }
 
 // Dates: stored "YYYY-MM-DD", sent as "YYYY-MM" (month precision, like the website).

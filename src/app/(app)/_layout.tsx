@@ -32,6 +32,8 @@ export default function SignedInLayout() {
       <Stack.Screen name="knowledge/about" options={linkedScreen} />
       <Stack.Screen name="knowledge/[kind]/index" options={linkedScreen} />
       <Stack.Screen name="knowledge/[kind]/item" options={linkedScreen} />
+      {/* Choosing a school, place or study interest, with a search field. */}
+      <Stack.Screen name="knowledge/pick" options={linkedScreen} />
       <Stack.Screen name="guide/index" options={linkedScreen} />
       {/* Zooms open from its card (Apple's zoom transition), so no navigation header
           (it would stay put while the page zooms); the page has its own close button. */}
