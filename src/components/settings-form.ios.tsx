@@ -20,7 +20,10 @@ import {
   disabled,
   font,
   foregroundStyle,
+  kerning,
   keyboardType,
+  listRowBackground,
+  listRowInsets,
   listStyle,
   multilineTextAlignment,
   scrollContentBackground,
@@ -36,6 +39,7 @@ import { Colors } from '@/constants/theme';
 import { GENDERS, parseIsoDate, toIsoDate } from '@/lib/settings';
 
 const NO_GENDER = 'none';
+const TITLE_SIZE = 34;
 // A birthday picker starts here when you add one: around a typical applicant's age.
 const DEFAULT_BIRTHDAY = '2008-01-01';
 
@@ -63,10 +67,22 @@ export function SettingsForm({
         modifiers={[
           listStyle('insetGrouped'),
           scrollContentBackground('hidden'),
-          background(Colors.background),
+          background(Colors.backgroundGrouped),
           scrollDismissesKeyboard('interactively'),
           tint(Colors.olive),
         ]}>
+        {/* The page's title, in the list rather than a navigation bar (it scrolls away). */}
+        <Section modifiers={[listRowBackground('#00000000'), listRowInsets({ leading: 4, trailing: 0, top: 0, bottom: 0 })]}>
+          <Text
+            modifiers={[
+              font({ family: 'AveriaSerifLibre-Regular', size: TITLE_SIZE }),
+              kerning(TITLE_SIZE * -0.03),
+              foregroundStyle(Colors.text),
+            ]}>
+            Settings
+          </Text>
+        </Section>
+
         <Section title="Profile" footer={<Text>{SETTINGS_COPY.profileFooter}</Text>}>
           <Field
             label="First name"

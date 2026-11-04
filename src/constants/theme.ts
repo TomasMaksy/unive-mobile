@@ -21,6 +21,9 @@ export const Colors = {
   textMuted: '#a3a3a3',
   /** --background / --surface: the warm off-white page */
   background: '#f9f9f7',
+  /** Behind white cards and grouped lists (profile, settings, mentors, guide):
+   * darker than `background`, so the cards stand out clearly. */
+  backgroundGrouped: '#eeede8',
   /** cards, inputs and chat bubbles sit on white */
   backgroundElement: '#ffffff',
   /** --surface-hover */

@@ -29,8 +29,29 @@ export type Mentors = {
   prefill: { name: string; email: string };
 };
 
-export function fetchMentors() {
-  return apiFetch<Mentors>('/api/mobile/mentors');
+// The last list loaded, so a mentor's page opens instantly from their card.
+let loaded: Mentors | null = null;
+
+export async function fetchMentors() {
+  loaded = await apiFetch<Mentors>('/api/mobile/mentors');
+  return loaded;
+}
+
+/** The list as last loaded, if it has been. */
+export function loadedMentors() {
+  return loaded;
+}
+
+/** "Kevan S." → "kevan-s", for the mentor's page address. */
+export function mentorSlug(mentor: Mentor) {
+  return mentor.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+export function findMentor(mentors: Mentors, slug: string) {
+  return [...mentors.recommended, ...mentors.others].find((mentor) => mentorSlug(mentor) === slug) ?? null;
 }
 
 export function mentorImageUrl(mentor: Mentor) {

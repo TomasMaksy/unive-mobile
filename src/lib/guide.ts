@@ -20,6 +20,8 @@ export type GuideTopicSummary = {
   description: string;
   imagePath: string;
   sections: { id: string; title: string; emoji?: string }[];
+  /** Rough reading time. */
+  readingMinutes: number | null;
 };
 
 export type GuideSection = {
@@ -36,6 +38,7 @@ export type GuideTopic = {
   description: string;
   imagePath: string;
   audioManifestPath: string;
+  readingMinutes: number;
   intro: GuideBlock[];
   sections: GuideSection[];
 };

@@ -86,17 +86,16 @@ export default function GuideTopicScreen() {
         ref={scrollRef}
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={{ paddingBottom: insets.bottom + LISTEN_BAR_SPACE }}>
-        <View style={{ height: width * 0.78 }}>
-          {/* The card's picture grows into this one (Apple's zoom transition). */}
-          <Link.AppleZoomTarget>
-            <Image
-              source={image || topic ? { uri: siteUrl(image ?? topic!.imagePath) } : null}
-              style={[styles.hero, { height: width * 0.78 }]}
-              contentFit="cover"
-            />
-          </Link.AppleZoomTarget>
-          <View pointerEvents="none" style={styles.heroFade} />
-        </View>
+        {/* The card's picture grows into this one (Apple's zoom transition). The
+            illustrations are cut-outs, shown whole on the page. */}
+        <Link.AppleZoomTarget>
+          <Image
+            source={image || topic ? { uri: siteUrl(image ?? topic!.imagePath) } : null}
+            style={[styles.hero, { height: insets.top + width * 0.7 }]}
+            contentFit="contain"
+            contentPosition="bottom"
+          />
+        </Link.AppleZoomTarget>
 
         {topic ? (
           <Animated.View
@@ -106,9 +105,14 @@ export default function GuideTopicScreen() {
               articleY.current = event.nativeEvent.layout.y;
             }}>
             <ThemedText style={styles.title}>{topic.title}</ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.description}>
-              {topic.description}
-            </ThemedText>
+            <View style={styles.subtitle}>
+              <ThemedText themeColor="textSecondary" style={styles.description}>
+                {topic.description}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textMuted">
+                {topic.sections.length} sections · {topic.readingMinutes} min read
+              </ThemedText>
+            </View>
 
             {topic.intro.length > 0 && <GuideBlocks blocks={topic.intro} />}
 
@@ -194,20 +198,11 @@ const styles = StyleSheet.create({
   },
   hero: {
     width: '100%',
-    backgroundColor: Colors.backgroundSelected,
-  },
-  heroFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 96,
-    experimental_backgroundImage: `linear-gradient(0deg, ${Colors.background}, rgba(249, 249, 247, 0))`,
+    marginBottom: Spacing.four,
   },
   article: {
     paddingHorizontal: Spacing.four,
     gap: Spacing.four,
-    marginTop: -Spacing.three,
   },
   title: {
     fontFamily: Fonts.heading,
@@ -216,8 +211,11 @@ const styles = StyleSheet.create({
     // The heading font's tight tracking, like the website's (-0.03em).
     letterSpacing: TITLE_SIZE * -0.03,
   },
-  description: {
+  subtitle: {
     marginTop: -Spacing.three,
+    gap: Spacing.two,
+  },
+  description: {
     fontSize: 17,
     lineHeight: 25,
   },

@@ -1,21 +1,24 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { PageTitle } from '@/components/page-title';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import { fetchGuideTopics, type GuideTopicSummary, siteUrl } from '@/lib/guide';
 
-const TITLE_SIZE = 24;
+const GAP = 12;
+const TITLE_SIZE = 19;
 
 /** The Application Guide's topics, like the website's /dashboard/guide. Opened from the profile. */
 export default function GuideScreen() {
+  const { width } = useWindowDimensions();
   const [topics, setTopics] = useState<GuideTopicSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const cardWidth = (width - Spacing.three * 2 - GAP) / 2;
 
   useEffect(() => {
     fetchGuideTopics().then(setTopics, () => setFailed(true));
@@ -28,12 +31,17 @@ export default function GuideScreen() {
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-      <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-        Your step-by-step application course.
-      </ThemedText>
+      <View style={styles.header}>
+        <PageTitle>Application Guide</PageTitle>
+        <ThemedText themeColor="textSecondary">Your step-by-step application course.</ThemedText>
+      </View>
 
       {topics ? (
-        topics.map((topic, index) => <TopicCard key={topic.id} topic={topic} index={index} />)
+        <View style={styles.grid}>
+          {topics.map((topic, index) => (
+            <TopicCard key={topic.id} topic={topic} index={index} width={cardWidth} />
+          ))}
+        </View>
       ) : failed ? (
         <Pressable onPress={retry} style={styles.status}>
           <ThemedText themeColor="textSecondary">Couldn’t load the guide.</ThemedText>
@@ -46,28 +54,27 @@ export default function GuideScreen() {
   );
 }
 
-// A topic, like a story on the App Store's Today tab: tap it and it zooms open.
-function TopicCard({ topic, index }: { topic: GuideTopicSummary; index: number }) {
+// A topic: its illustration (whole, never cropped), the title, and how long it is.
+// Tap it and it zooms open, like a story on the App Store's Today tab.
+function TopicCard({ topic, index, width }: { topic: GuideTopicSummary; index: number; width: number }) {
+  const meta = [`${topic.sections.length} sections`, topic.readingMinutes ? `${topic.readingMinutes} min` : null]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <Animated.View entering={FadeInDown.delay(70 * index).duration(400)}>
+    <Animated.View entering={FadeInDown.delay(50 * index).duration(380)} style={{ width }}>
       <Link href={{ pathname: '/guide/[topic]', params: { topic: topic.id, image: topic.imagePath } }} asChild>
         <Link.Trigger withAppleZoom>
-          <PressableScale pressedScale={0.97} haptic accessibilityRole="button" style={styles.card}>
-            <Image source={{ uri: siteUrl(topic.imagePath) }} style={styles.image} contentFit="cover" transition={250} />
-            <View style={styles.body}>
-              <ThemedText type="smallBold" themeColor="olive">
-                PART {index + 1}
+          <PressableScale pressedScale={0.96} haptic accessibilityRole="button" accessibilityLabel={topic.title} style={styles.card}>
+            {/* The illustrations are cut-outs of different shapes; each fits whole. */}
+            <Image source={{ uri: siteUrl(topic.imagePath) }} style={styles.art} contentFit="contain" transition={250} />
+            <View style={styles.text}>
+              <ThemedText style={styles.title} numberOfLines={2}>
+                {topic.title}
               </ThemedText>
-              <ThemedText style={styles.title}>{topic.title}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {topic.description}
+              <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
+                {meta}
               </ThemedText>
-              <View style={styles.meta}>
-                <SymbolView name="list.bullet" size={13} tintColor={Colors.textSecondary} style={styles.metaIcon} />
-                <ThemedText type="small" themeColor="textSecondary">
-                  {topic.sections.length} sections
-                </ThemedText>
-              </View>
             </View>
           </PressableScale>
         </Link.Trigger>
@@ -78,44 +85,45 @@ function TopicCard({ topic, index }: { topic: GuideTopicSummary; index: number }
 
 const styles = StyleSheet.create({
   content: {
-    padding: Spacing.three,
+    paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.six,
-    gap: Spacing.three,
+    gap: Spacing.four,
   },
-  subtitle: {
+  header: {
     paddingHorizontal: Spacing.one,
-    marginBottom: Spacing.one,
+    gap: Spacing.one,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GAP,
   },
   card: {
     ...Shape.card,
-    overflow: 'hidden',
     backgroundColor: Colors.backgroundElement,
+    overflow: 'hidden',
   },
-  image: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    backgroundColor: Colors.backgroundSelected,
+  art: {
+    height: 150,
+    marginTop: Spacing.three,
+    marginHorizontal: Spacing.three,
   },
-  body: {
-    padding: Spacing.three + Spacing.one,
+  text: {
+    padding: Spacing.three,
     gap: Spacing.one,
   },
   title: {
     fontFamily: Fonts.heading,
     fontSize: TITLE_SIZE,
     lineHeight: TITLE_SIZE * 1.2,
+    // Two lines' room, so cards side by side end at the same height.
+    minHeight: TITLE_SIZE * 1.2 * 2,
     // The heading font's tight tracking, like the website's (-0.03em).
     letterSpacing: TITLE_SIZE * -0.03,
   },
   meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginTop: Spacing.two,
-  },
-  metaIcon: {
-    width: 14,
-    height: 14,
+    fontSize: 13,
+    lineHeight: 18,
   },
   status: {
     alignItems: 'center',

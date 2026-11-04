@@ -4,13 +4,14 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, V
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { MentorCard } from '@/components/mentor-card';
+import { PageTitle } from '@/components/page-title';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Shape, Spacing } from '@/constants/theme';
-import { bookMentor, fetchMentors, type Mentors } from '@/lib/mentors';
+import { Colors, Spacing } from '@/constants/theme';
+import { bookMentor, fetchMentors, loadedMentors, type Mentors } from '@/lib/mentors';
 
 /** Unive's tutors to book a 1-on-1 with, like the website's Mentors page. Opened from the profile. */
 export default function MentorsScreen() {
-  const [mentors, setMentors] = useState<Mentors | null>(null);
+  const [mentors, setMentors] = useState<Mentors | null>(loadedMentors);
   const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -31,17 +32,17 @@ export default function MentorsScreen() {
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={reload} />}>
-      <ThemedText themeColor="textSecondary" style={styles.intro}>
-        Sometimes you want a human in the loop. Book a 1-on-1 with a Unive tutor to pressure-test your school list, talk
-        through programs, sharpen your essays, or get a final read before you submit.
-      </ThemedText>
-
-      <View style={styles.guarantee}>
-        <SymbolView name="checkmark.seal.fill" size={18} tintColor={Colors.olive} style={styles.guaranteeIcon} />
-        <ThemedText type="small" style={styles.guaranteeText}>
-          <ThemedText type="smallBold">100% satisfaction guarantee.</ThemedText> Session wasn’t helpful? We’ll give you a
-          full refund.
+      <View style={styles.header}>
+        <PageTitle>Mentors</PageTitle>
+        <ThemedText themeColor="textSecondary">
+          A 1-on-1 with a tutor from Harvard, MIT, Stanford and more, for your list, essays or a final read.
         </ThemedText>
+        <View style={styles.guarantee}>
+          <SymbolView name="checkmark.seal.fill" size={15} tintColor={Colors.olive} style={styles.guaranteeIcon} />
+          <ThemedText type="small" themeColor="textSecondary">
+            Not helpful? Full refund.
+          </ThemedText>
+        </View>
       </View>
 
       {mentors ? (
@@ -54,7 +55,6 @@ export default function MentorsScreen() {
                   mentor={mentor}
                   index={index}
                   price={mentors.price}
-                  regularPrice={mentors.regularPrice}
                   onBook={() => void bookMentor(mentor, mentors.prefill)}
                 />
               ))}
@@ -67,7 +67,6 @@ export default function MentorsScreen() {
                 mentor={mentor}
                 index={mentors.recommended.length + index}
                 price={mentors.price}
-                regularPrice={mentors.regularPrice}
                 onBook={() => void bookMentor(mentor, mentors.prefill)}
               />
             ))}
@@ -90,7 +89,7 @@ function Section({ title, children }: { title?: string; children: React.ReactNod
     <View style={styles.section}>
       {title ? (
         <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-          {title.toUpperCase()}
+          {title}
         </ThemedText>
       ) : null}
       {children}
@@ -100,37 +99,31 @@ function Section({ title, children }: { title?: string; children: React.ReactNod
 
 const styles = StyleSheet.create({
   content: {
-    padding: Spacing.three,
+    paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.six,
-    gap: Spacing.three,
+    gap: Spacing.four,
   },
-  intro: {
+  header: {
     paddingHorizontal: Spacing.one,
+    gap: Spacing.two,
   },
   guarantee: {
-    ...Shape.card,
     flexDirection: 'row',
-    gap: Spacing.two,
-    padding: Spacing.three,
-    backgroundColor: Colors.backgroundElement,
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   guaranteeIcon: {
-    width: 18,
-    height: 20,
-  },
-  guaranteeText: {
-    flex: 1,
+    width: 16,
+    height: 16,
   },
   sections: {
     gap: Spacing.four,
-    marginTop: Spacing.two,
   },
   section: {
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
   sectionTitle: {
     paddingHorizontal: Spacing.one,
-    letterSpacing: 0.4,
   },
   status: {
     alignItems: 'center',

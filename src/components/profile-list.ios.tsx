@@ -40,7 +40,7 @@ export function ProfileList({
 
   return (
     <Host style={{ flex: 1 }} colorScheme="light">
-      <List modifiers={[listStyle('insetGrouped'), scrollContentBackground('hidden'), background(Colors.background)]}>
+      <List modifiers={[listStyle('insetGrouped'), scrollContentBackground('hidden'), background(Colors.backgroundGrouped)]}>
         <Section modifiers={[listRowBackground('#00000000')]}>
           <VStack spacing={8} modifiers={[frame({ maxWidth: 10000 }), padding({ top: 36, bottom: 8 })]}>
             {/* Your picture is a React Native view (expo-image loads it), placed in the SwiftUI list. */}
