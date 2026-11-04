@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { PageTitle } from '@/components/page-title';
@@ -10,15 +10,13 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import { fetchGuideTopics, type GuideTopicSummary, siteUrl } from '@/lib/guide';
 
-const GAP = 12;
-const TITLE_SIZE = 19;
+const TITLE_SIZE = 24;
+const ART_SIZE = 96;
 
 /** The Application Guide's topics, like the website's /dashboard/guide. Opened from the profile. */
 export default function GuideScreen() {
-  const { width } = useWindowDimensions();
   const [topics, setTopics] = useState<GuideTopicSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const cardWidth = (width - Spacing.three * 2 - GAP) / 2;
 
   useEffect(() => {
     fetchGuideTopics().then(setTopics, () => setFailed(true));
@@ -37,9 +35,9 @@ export default function GuideScreen() {
       </View>
 
       {topics ? (
-        <View style={styles.grid}>
+        <View style={styles.list}>
           {topics.map((topic, index) => (
-            <TopicCard key={topic.id} topic={topic} index={index} width={cardWidth} />
+            <TopicCard key={topic.id} topic={topic} index={index} />
           ))}
         </View>
       ) : failed ? (
@@ -54,20 +52,19 @@ export default function GuideScreen() {
   );
 }
 
-// A topic: its illustration (whole, never cropped), the title, and how long it is.
+// A topic in one row: the title and how long it is on the left, its
+// illustration (whole, never cropped) on the right.
 // Tap it and it zooms open, like a story on the App Store's Today tab.
-function TopicCard({ topic, index, width }: { topic: GuideTopicSummary; index: number; width: number }) {
+function TopicCard({ topic, index }: { topic: GuideTopicSummary; index: number }) {
   const meta = [`${topic.sections.length} sections`, topic.readingMinutes ? `${topic.readingMinutes} min` : null]
     .filter(Boolean)
     .join(' · ');
 
   return (
-    <Animated.View entering={FadeInDown.delay(50 * index).duration(380)} style={{ width }}>
+    <Animated.View entering={FadeInDown.delay(50 * index).duration(380)}>
       <Link href={{ pathname: '/guide/[topic]', params: { topic: topic.id, image: topic.imagePath } }} asChild>
         <Link.Trigger withAppleZoom>
           <PressableScale pressedScale={0.96} haptic accessibilityRole="button" accessibilityLabel={topic.title} style={styles.card}>
-            {/* The illustrations are cut-outs of different shapes; each fits whole. */}
-            <Image source={{ uri: siteUrl(topic.imagePath) }} style={styles.art} contentFit="contain" transition={250} />
             <View style={styles.text}>
               <ThemedText style={styles.title} numberOfLines={2}>
                 {topic.title}
@@ -76,6 +73,8 @@ function TopicCard({ topic, index, width }: { topic: GuideTopicSummary; index: n
                 {meta}
               </ThemedText>
             </View>
+            {/* The illustrations are cut-outs of different shapes; each fits whole. */}
+            <Image source={{ uri: siteUrl(topic.imagePath) }} style={styles.art} contentFit="contain" transition={250} />
           </PressableScale>
         </Link.Trigger>
       </Link>
@@ -93,37 +92,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.one,
     gap: Spacing.one,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: GAP,
+  list: {
+    gap: Spacing.two + Spacing.one,
   },
   card: {
     ...Shape.card,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingVertical: Spacing.three,
+    paddingLeft: Spacing.four,
+    paddingRight: Spacing.three,
     backgroundColor: Colors.backgroundElement,
-    overflow: 'hidden',
-  },
-  art: {
-    height: 150,
-    marginTop: Spacing.three,
-    marginHorizontal: Spacing.three,
   },
   text: {
-    padding: Spacing.three,
-    gap: Spacing.one,
+    flex: 1,
+    gap: Spacing.two,
+  },
+  art: {
+    width: ART_SIZE,
+    height: ART_SIZE,
   },
   title: {
     fontFamily: Fonts.heading,
     fontSize: TITLE_SIZE,
-    lineHeight: TITLE_SIZE * 1.2,
-    // Two lines' room, so cards side by side end at the same height.
-    minHeight: TITLE_SIZE * 1.2 * 2,
+    lineHeight: TITLE_SIZE * 1.15,
     // The heading font's tight tracking, like the website's (-0.03em).
     letterSpacing: TITLE_SIZE * -0.03,
   },
   meta: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 19,
   },
   status: {
     alignItems: 'center',

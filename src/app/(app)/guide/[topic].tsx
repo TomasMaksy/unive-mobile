@@ -111,7 +111,7 @@ export default function GuideTopicScreen() {
         <Link.AppleZoomTarget>
           <Image
             source={image || topic ? { uri: siteUrl(image ?? topic!.imagePath) } : null}
-            style={[styles.hero, { height: insets.top + width * 0.7 }]}
+            style={[styles.hero, { marginTop: insets.top + Spacing.six, height: width * 0.62 }]}
             contentFit="contain"
             contentPosition="bottom"
           />
