@@ -4,6 +4,11 @@ import type { CalendarStatus, ProfileChanges } from '@/lib/settings';
 // '@/components/settings-form' from the .ios file would import itself).
 
 export type SettingsFormProps = {
+  /** Your picture, shown on top; tap it to change it. */
+  name: string;
+  imageUrl: string | null;
+  uploadingPhoto: boolean;
+  onEditPhoto: () => void;
   /** The details as you're editing them. */
   draft: ProfileChanges;
   onChange: (changes: Partial<ProfileChanges>) => void;

@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { SETTINGS_COPY, type SettingsFormProps } from '@/components/settings-form-types';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -12,6 +13,12 @@ export function SettingsForm(props: SettingsFormProps) {
   const { draft, onChange, calendar } = props;
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+      <Pressable onPress={props.onEditPhoto} style={styles.photo} accessibilityRole="button" accessibilityLabel="Change profile picture">
+        <ProfileAvatar size={96} imageUrl={props.imageUrl} name={props.name} busy={props.uploadingPhoto} />
+        <ThemedText type="smallBold" themeColor="olive">
+          {props.imageUrl ? 'Edit' : 'Add Photo'}
+        </ThemedText>
+      </Pressable>
       <Group title="Profile" footer={SETTINGS_COPY.profileFooter}>
         <Field label="First name" value={draft.name} onChange={(name) => onChange({ name })} />
         <Field label="Last name" value={draft.lastName} onChange={(lastName) => onChange({ lastName })} />
@@ -81,6 +88,7 @@ function Row({ label, destructive, onPress }: { label: string; destructive?: boo
 
 const styles = StyleSheet.create({
   content: { padding: Spacing.four, gap: Spacing.four },
+  photo: { alignItems: 'center', gap: Spacing.two },
   group: { gap: Spacing.two },
   card: { backgroundColor: Colors.backgroundElement, borderRadius: 16, paddingHorizontal: Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.three, paddingVertical: Spacing.three },

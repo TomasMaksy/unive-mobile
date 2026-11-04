@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { authClient } from '@/lib/auth-client';
 import { refreshProfileImage } from '@/lib/profile-image';
+import { useEditProfilePhoto } from '@/lib/use-edit-profile-photo';
 import {
   type CalendarStatus,
   changeEmail,
@@ -49,6 +50,7 @@ export default function SettingsScreen() {
   const [calendarScope, setCalendarScope] = useState<string | null>(null);
   const [calendarBusy, setCalendarBusy] = useState(false);
   const [erasing, setErasing] = useState(false);
+  const photo = useEditProfilePhoto();
 
   const load = useCallback(() => {
     const settingsLoaded = fetchSettings().then(
@@ -258,6 +260,10 @@ export default function SettingsScreen() {
         </Stack.Toolbar>
       )}
       <SettingsForm
+        name={[draft.name, draft.lastName].filter(Boolean).join(' ') || settings.profile.email}
+        imageUrl={photo.imageUrl}
+        uploadingPhoto={photo.uploading}
+        onEditPhoto={photo.editPhoto}
         draft={draft}
         onChange={(changes) => setDraft((current) => current && { ...current, ...changes })}
         email={settings.profile.email}

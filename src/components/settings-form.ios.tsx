@@ -8,11 +8,13 @@ import {
   List,
   Picker,
   ProgressView,
+  RNHostView,
   Section,
   Spacer,
   Text,
   TextField,
   useNativeState,
+  VStack,
 } from '@expo/ui/swift-ui';
 import {
   autocorrectionDisabled,
@@ -20,6 +22,7 @@ import {
   disabled,
   font,
   foregroundStyle,
+  frame,
   kerning,
   keyboardType,
   listRowBackground,
@@ -34,12 +37,15 @@ import {
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 
+import { PressableScale } from '@/components/pressable-scale';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { SETTINGS_COPY, type SettingsFormProps } from '@/components/settings-form-types';
 import { Colors } from '@/constants/theme';
 import { GENDERS, parseIsoDate, toIsoDate } from '@/lib/settings';
 
 const NO_GENDER = 'none';
 const TITLE_SIZE = 34;
+const PHOTO_SIZE = 96;
 // A birthday picker starts here when you add one: around a typical applicant's age.
 const DEFAULT_BIRTHDAY = '2008-01-01';
 
@@ -48,6 +54,10 @@ const DEFAULT_BIRTHDAY = '2008-01-01';
  * (src/app/dashboard/(sidebar)/(main)/settings in unive-v2) as grouped rows.
  */
 export function SettingsForm({
+  name,
+  imageUrl,
+  uploadingPhoto,
+  onEditPhoto,
   draft,
   onChange,
   email,
@@ -81,6 +91,27 @@ export function SettingsForm({
             ]}>
             Settings
           </Text>
+        </Section>
+
+        {/* Your picture, like editing a contact: tap it (or Edit) to change it. */}
+        <Section modifiers={[listRowBackground('#00000000')]}>
+          <VStack spacing={10} modifiers={[frame({ maxWidth: 10000 })]}>
+            <RNHostView matchContents>
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Change profile picture"
+                pressedScale={0.94}
+                haptic
+                onPress={onEditPhoto}>
+                <ProfileAvatar size={PHOTO_SIZE} imageUrl={imageUrl} name={name} busy={uploadingPhoto} />
+              </PressableScale>
+            </RNHostView>
+            <Button onPress={onEditPhoto}>
+              <Text modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' }), foregroundStyle(Colors.olive)]}>
+                {imageUrl ? 'Edit' : 'Add Photo'}
+              </Text>
+            </Button>
+          </VStack>
         </Section>
 
         <Section title="Profile" footer={<Text>{SETTINGS_COPY.profileFooter}</Text>}>
