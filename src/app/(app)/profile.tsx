@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActionSheetIOS, Alert, Platform, Share, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ActionSheetIOS, Alert, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/icon-button';
@@ -10,7 +10,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { authClient, signOut } from '@/lib/auth-client';
 import { removeProfileImage, uploadProfileImage, useProfileImage } from '@/lib/profile-image';
-import { fetchReferralInvite, type ReferralInvite } from '@/lib/referral';
 
 /**
  * Zooms out of the avatar at the top left of every tab (see screen-header.tsx).
@@ -26,25 +25,6 @@ export default function ProfileScreen() {
   const fullName = [session?.user.name, lastName].filter(Boolean).join(' ');
   const imageUrl = useProfileImage();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [invite, setInvite] = useState<ReferralInvite | null>(null);
-
-  // Load the invite link now, so the share sheet opens the moment you tap.
-  useEffect(() => {
-    fetchReferralInvite()
-      .then(setInvite)
-      .catch(() => {}); // Tapping tries again.
-  }, []);
-
-  async function shareInvite() {
-    try {
-      const { inviteUrl } = invite ?? (await fetchReferralInvite());
-      // The link goes inside the message: passed separately, iOS's Copy would copy only the text.
-      // Messages and other apps still turn it into a preview card.
-      await Share.share({ message: `Join me on Unive and we both get a month free: ${inviteUrl}` });
-    } catch {
-      Alert.alert("Couldn't load your invite link", 'Check your connection and try again.');
-    }
-  }
 
   async function pickPhoto(source: 'camera' | 'library') {
     // Apple's own square crop, like the website's crop dialog.
@@ -119,7 +99,7 @@ export default function ProfileScreen() {
         imageUrl={imageUrl}
         uploadingPhoto={uploadingPhoto}
         onEditPhoto={editPhoto}
-        onInvite={shareInvite}
+        onInvite={() => router.push('/invite')}
         onOpen={(screen) => router.push(`/${screen}`)}
         onSignOut={signOut}
       />
