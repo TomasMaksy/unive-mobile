@@ -8,7 +8,7 @@ import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
-import { API_URL, authClient, signOut } from '@/lib/auth-client';
+import { authClient, signOut } from '@/lib/auth-client';
 
 const PRIVACY_POLICY_URL = 'https://unive.ai/legal/privacy-policy';
 
@@ -149,13 +149,6 @@ export default function SignInScreen() {
               </ThemedText>
             </View>
 
-            {__DEV__ && (
-              <ThemedText type="small" themeColor="textMuted" style={styles.center}>
-                {API_URL.startsWith('http://')
-                  ? `Local backend (${API_URL}): the code is printed as [OTP] in the terminal running npm run dev.`
-                  : `Backend: ${API_URL}. Codes are sent by real email.`}
-              </ThemedText>
-            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

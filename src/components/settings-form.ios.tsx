@@ -12,8 +12,6 @@ import {
   Section,
   Spacer,
   Text,
-  TextField,
-  useNativeState,
   VStack,
 } from '@expo/ui/swift-ui';
 import {
@@ -37,6 +35,7 @@ import {
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 
+import { NativeTextField } from '@/components/native-text-field';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { SETTINGS_COPY, type SettingsFormProps } from '@/components/settings-form-types';
@@ -116,12 +115,14 @@ export function SettingsForm({
 
         <Section title="Profile" footer={<Text>{SETTINGS_COPY.profileFooter}</Text>}>
           <Field
+            name="name"
             label="First name"
             value={draft.name}
             onChange={(name) => onChange({ name })}
             modifiers={[textContentType('givenName')]}
           />
           <Field
+            name="lastName"
             label="Last name"
             value={draft.lastName}
             onChange={(lastName) => onChange({ lastName })}
@@ -152,6 +153,7 @@ export function SettingsForm({
             ))}
           </Picker>
           <Field
+            name="phone"
             label="Phone"
             value={draft.phone ?? ''}
             placeholder="+1 555 123 4567"
@@ -238,24 +240,25 @@ export function SettingsForm({
 
 // A labelled text field, like the Settings app's: label on the left, value on the right.
 function Field({
+  name,
   label,
   value,
   placeholder,
   onChange,
   modifiers = [],
 }: {
+  name: string;
   label: string;
   value: string;
   placeholder?: string;
   onChange: (value: string) => void;
-  modifiers?: NonNullable<Parameters<typeof TextField>[0]['modifiers']>;
+  modifiers?: NonNullable<Parameters<typeof NativeTextField>[0]['modifiers']>;
 }) {
-  // The field keeps its own text natively (no flicker while typing); it starts from the saved value.
-  const text = useNativeState(value);
   return (
     <LabeledContent label={label}>
-      <TextField
-        text={text}
+      <NativeTextField
+        name={name}
+        initialText={value}
         placeholder={placeholder ?? label}
         onTextChange={onChange}
         modifiers={[
