@@ -1,17 +1,16 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import type { SearchBarCommands } from 'react-native-screens';
 
 import { PageTitle } from '@/components/page-title';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { loadPlaces, type Place, searchInterests, searchSchools } from '@/features/knowledge/about';
-import { EDUCATION_STAGES } from '@/lib/knowledge';
 import { finishPick, type Picked, type PickKind } from '@/features/knowledge/picker';
 
-const COPY: Record<PickKind, { title: string; placeholder: string }> = {
-  stage: { title: 'Stage', placeholder: 'Search stages' },
+const COPY: Record<Exclude<PickKind, 'stage'>, { title: string; placeholder: string }> = {
   highSchool: { title: 'High school', placeholder: 'Search high schools' },
   university: { title: 'University', placeholder: 'Search universities' },
   country: { title: 'Country', placeholder: 'Search countries' },
@@ -21,10 +20,12 @@ const COPY: Record<PickKind, { title: string; placeholder: string }> = {
 
 type Row = { key: string; title: string; detail?: string | null; value: Picked; accent?: boolean };
 
-// Stages pick like places: a code and its name.
-const STAGES: Place[] = Object.entries(EDUCATION_STAGES).map(([code, name]) => ({ code, name }));
 
 const CUSTOM_NAME_MAX = 50;
+/** Lists longer than this open with the search field focused, ready to type. */
+const FOCUS_SEARCH_OVER = 12;
+// Waits for the page to finish sliding in, or the keyboard can't come up.
+const FOCUS_DELAY_MS = 450;
 
 /**
  * Choosing a school, place or study interest: a search field and the
@@ -43,7 +44,18 @@ export default function PickScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Row[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const copy = COPY[kind];
+  const copy = COPY[kind as Exclude<PickKind, 'stage'>];
+  const searchBar = useRef<SearchBarCommands>(null);
+  const focused = useRef(false);
+
+  // A long list (schools, countries, states, subjects) is quicker to search
+  // than to scroll, so the keyboard comes up ready. Short ones (stages) don't.
+  useEffect(() => {
+    if (focused.current || !results || results.length <= FOCUS_SEARCH_OVER) return;
+    focused.current = true;
+    const timer = setTimeout(() => searchBar.current?.focus(), FOCUS_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [results]);
 
   // Closing without a choice tells the page that asked.
   useEffect(() => () => finishPick(pick), [pick]);
@@ -54,7 +66,7 @@ export default function PickScreen() {
     const timer = setTimeout(
       async () => {
         try {
-          const rows = await search(kind, query, state ?? null);
+          const rows = await search(kind as Exclude<PickKind, 'stage'>, query, state ?? null);
           if (!cancelled) {
             setResults(rows);
             setFailed(false);
@@ -111,7 +123,7 @@ export default function PickScreen() {
       <Stack.Screen options={{ headerBackTitle: 'Back' }} />
       <Stack.SearchBar
         placeholder={copy.placeholder}
-        autoFocus={kind !== 'state' && kind !== 'stage'}
+        ref={searchBar}
         hideWhenScrolling={false}
         autoCapitalize="none"
         tintColor={Colors.olive}
@@ -180,9 +192,9 @@ export default function PickScreen() {
   );
 }
 
-async function search(kind: PickKind, query: string, state: string | null): Promise<Row[]> {
-  if (kind === 'country' || kind === 'state' || kind === 'stage') {
-    const list: Place[] = kind === 'stage' ? STAGES : await loadPlaces().then((places) => (kind === 'country' ? places.countries : places.states));
+async function search(kind: Exclude<PickKind, 'stage'>, query: string, state: string | null): Promise<Row[]> {
+  if (kind === 'country' || kind === 'state') {
+    const list: Place[] = await loadPlaces().then((places) => (kind === 'country' ? places.countries : places.states));
     const needle = query.trim().toLowerCase();
     return list
       .filter((place) => !needle || place.name.toLowerCase().includes(needle) || place.code.toLowerCase() === needle)

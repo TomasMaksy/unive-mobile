@@ -22,9 +22,10 @@ import {
   schoolLabel,
   type StudyInterest,
 } from '@/features/knowledge/about';
-import { formatScore, parseScore, saveScore, SCORES } from '@/features/knowledge/academics';
+import { formatScore, SCORES } from '@/features/knowledge/academics';
 import { countryName } from '@/features/knowledge/country';
 import { pickFrom } from '@/features/knowledge/picker';
+import { ScoreSheet } from '@/features/knowledge/score-sheet';
 import { siteUrl } from '@/lib/guide';
 import { type Academics, EDUCATION_STAGES, type Knowledge, useKnowledge } from '@/lib/knowledge';
 
@@ -123,33 +124,10 @@ function About({ knowledge }: { knowledge: Knowledge }) {
     if (picked && picked.code !== about.state) await run('state', () => saveLocation('US', picked.code));
   }
 
+  // The score being changed, in a sheet over this page.
+  const [scoreKey, setScoreKey] = useState<keyof Academics | null>(null);
   function editScore(key: keyof Academics) {
-    const field = SCORES.find((score) => score.key === key)!;
-    const current = formatScore(key, academics[key]) ?? '';
-    Alert.prompt(
-      field.label,
-      `From ${field.min} to ${field.max}. Leave it empty if you haven’t taken it.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          isPreferred: true,
-          onPress: (text?: string) => {
-            const value = parseScore(key, text ?? '');
-            if (value === undefined) {
-              Alert.alert(`Check your ${field.label}`, `It goes from ${field.min} to ${field.max}.`, [
-                { text: 'OK', onPress: () => editScore(key) },
-              ]);
-              return;
-            }
-            if (value !== academics[key]) void run(key, () => saveScore(key, value));
-          },
-        },
-      ],
-      'plain-text',
-      current,
-      field.keyboard,
-    );
+    setScoreKey(key);
   }
 
   async function addInterest() {
@@ -175,6 +153,7 @@ function About({ knowledge }: { knowledge: Knowledge }) {
   return (
     <>
       <Stack.Screen options={{ headerBackTitle: 'Library' }} />
+      <ScoreSheet scoreKey={scoreKey} current={scoreKey ? academics[scoreKey] : null} onClose={() => setScoreKey(null)} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <PageTitle>About you</PageTitle>
@@ -203,7 +182,6 @@ function About({ knowledge }: { knowledge: Knowledge }) {
               label={score.label}
               value={formatScore(score.key, academics[score.key])}
               placeholder="Add"
-              busy={busy === score.key}
               onPress={() => editScore(score.key)}
             />
           ))}

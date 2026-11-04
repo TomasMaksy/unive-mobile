@@ -27,7 +27,8 @@ export function pickFrom(
     waiting = { id, resolve };
     const params: Record<string, string> = { kind, pick: id };
     for (const [key, value] of Object.entries(context)) if (value) params[key] = value;
-    router.push({ pathname: '/knowledge/pick', params });
+    // The stage has its own two-step page; the rest are search lists.
+    router.push({ pathname: kind === 'stage' ? '/knowledge/stage' : '/knowledge/pick', params });
   });
 }
 
