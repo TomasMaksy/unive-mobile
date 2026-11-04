@@ -24,13 +24,17 @@ const TITLE_SIZE = 28;
  * Without an id it starts as a blank form, for adding one.
  */
 export default function KnowledgeItemScreen() {
-  const { kind, id } = useLocalSearchParams<{ kind: KnowledgeKind; id?: string }>();
+  // `edit` opens it straight as a form (Edit in the list's long-press menu).
+  const { kind, id, edit } = useLocalSearchParams<{ kind: KnowledgeKind; id?: string; edit?: string }>();
   const router = useRouter();
   const knowledge = useKnowledge();
   const spec = FORMS[kind];
   const item = knowledge && id ? findItem(knowledge, kind, id) : undefined;
 
-  const [draft, setDraft] = useState<Draft | null>(() => (id ? null : { ...spec.empty }));
+  const [draft, setDraft] = useState<Draft | null>(() => {
+    if (!id) return { ...spec.empty };
+    return edit && item ? spec.toDraft(item as never) : null;
+  });
   const [saving, setSaving] = useState(false);
   const fields = useTextFieldValues();
   const editing = draft !== null;
@@ -42,9 +46,12 @@ export default function KnowledgeItemScreen() {
     setDraft(spec.toDraft(item as never));
   }
 
+  // Opened to edit from the list's menu, Cancel and Done go back to the list.
+  const backToList = !id || Boolean(edit);
+
   function cancel() {
-    if (id) setDraft(null);
-    else router.back();
+    if (backToList) router.back();
+    else setDraft(null);
   }
 
   async function save() {
@@ -60,7 +67,8 @@ export default function KnowledgeItemScreen() {
         if (kind === 'languages' && typeof latest.language === 'string' && latest.language.trim() !== id) {
           router.setParams({ id: latest.language.trim() });
         }
-        setDraft(null);
+        if (backToList) router.back();
+        else setDraft(null);
       } else {
         await addItem(kind, payload);
         router.back();
