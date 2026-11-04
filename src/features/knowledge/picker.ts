@@ -2,30 +2,38 @@ import type { useRouter } from 'expo-router';
 
 import type { Place, School, StudyInterest } from '@/features/knowledge/about';
 
-// Choosing a school, place or study interest on its own search page
-// (app/(app)/knowledge/pick.tsx), the way iOS forms push a list to choose from.
-// The page that asked waits for the answer: `await pickFrom(router, 'country')`.
+// Choosing a stage, school, place or study interest on its own search page
+// (app/(app)/knowledge/pick.tsx), the way iOS settings push a list to choose
+// from. The page that asked waits for the answer: `await pickFrom(router, 'country')`.
 
-export type PickKind = 'highSchool' | 'university' | 'country' | 'state' | 'interest';
+export type PickKind = 'stage' | 'highSchool' | 'university' | 'country' | 'state' | 'interest';
 export type Picked = School | Place | StudyInterest;
-
-let waiting: ((value: Picked | undefined) => void) | null = null;
 
 type Router = ReturnType<typeof useRouter>;
 
-export function pickFrom(router: Router, kind: PickKind, context: { country?: string | null; state?: string | null } = {}) {
-  waiting?.(undefined);
+// The one open request. Each has its own id, so a page closing late can't
+// answer the next request (one pick can lead straight into another).
+let waiting: { id: string; resolve: (value: Picked | undefined) => void } | null = null;
+let nextId = 0;
+
+export function pickFrom(
+  router: Router,
+  kind: PickKind,
+  context: { country?: string | null; state?: string | null; selected?: string | null } = {},
+) {
+  waiting?.resolve(undefined);
+  const id = String(++nextId);
   return new Promise<Picked | undefined>((resolve) => {
-    waiting = resolve;
-    router.push({
-      pathname: '/knowledge/pick',
-      params: { kind, ...(context.country ? { country: context.country } : {}), ...(context.state ? { state: context.state } : {}) },
-    });
+    waiting = { id, resolve };
+    const params: Record<string, string> = { kind, pick: id };
+    for (const [key, value] of Object.entries(context)) if (value) params[key] = value;
+    router.push({ pathname: '/knowledge/pick', params });
   });
 }
 
 /** Called by the search page: with the choice, or nothing when it closes without one. */
-export function finishPick(value?: Picked) {
-  waiting?.(value);
+export function finishPick(id: string, value?: Picked) {
+  if (waiting?.id !== id) return;
+  waiting.resolve(value);
   waiting = null;
 }

@@ -1,46 +1,34 @@
-import type { Academics } from '@/lib/knowledge';
-import type { Draft, FormSpec } from '@/lib/knowledge-fields';
+import type { KeyboardTypeOptions } from 'react-native';
 
-// Your test scores, edited together. Same ranges as the website's.
+import { apiFetch } from '@/lib/api';
+import { type Academics, refreshKnowledge } from '@/lib/knowledge';
 
-export const ACADEMICS_FORM: FormSpec['sections'] = [
-  {
-    title: 'Scores',
-    footer: 'Leave a score empty if you haven’t taken the test.',
-    fields: [
-      { key: 'gpa', label: 'GPA', type: 'text', keyboard: 'decimal-pad', placeholder: '0.00 – 4.00' },
-      { key: 'actComposite', label: 'ACT', type: 'text', keyboard: 'numeric', placeholder: '1 – 36' },
-      { key: 'satReading', label: 'SAT Reading & Writing', type: 'text', keyboard: 'numeric', placeholder: '200 – 800' },
-      { key: 'satMath', label: 'SAT Math', type: 'text', keyboard: 'numeric', placeholder: '200 – 800' },
-    ],
-  },
+// Your test scores, each edited on its own. Same ranges as the website's.
+
+export const SCORES: { key: keyof Academics; label: string; min: number; max: number; keyboard: KeyboardTypeOptions }[] = [
+  { key: 'gpa', label: 'GPA', min: 0, max: 4, keyboard: 'decimal-pad' },
+  { key: 'actComposite', label: 'ACT', min: 1, max: 36, keyboard: 'number-pad' },
+  { key: 'satReading', label: 'SAT Reading & Writing', min: 200, max: 800, keyboard: 'number-pad' },
+  { key: 'satMath', label: 'SAT Math', min: 200, max: 800, keyboard: 'number-pad' },
 ];
 
-const RANGES: Record<keyof Academics, [number, number]> = {
-  gpa: [0, 4],
-  actComposite: [1, 36],
-  satReading: [200, 800],
-  satMath: [200, 800],
-};
-
-export function academicsDraft(academics: Academics): Draft {
-  return Object.fromEntries(Object.entries(academics).map(([key, value]) => [key, value == null ? '' : String(value)]));
+export function formatScore(key: keyof Academics, value: number | null) {
+  if (value == null) return null;
+  return key === 'gpa' ? value.toFixed(2) : String(value);
 }
 
-/** The scores as numbers, or null where one is out of range. */
-export function parseAcademics(draft: Draft): Academics | null {
-  const result = {} as Academics;
-  for (const key of Object.keys(RANGES) as (keyof Academics)[]) {
-    const raw = typeof draft[key] === 'string' ? (draft[key] as string).trim().replace(',', '.') : '';
-    if (!raw) {
-      result[key] = null;
-      continue;
-    }
-    const value = Number(raw);
-    const [min, max] = RANGES[key];
-    const whole = key !== 'gpa';
-    if (!Number.isFinite(value) || value < min || value > max || (whole && !Number.isInteger(value))) return null;
-    result[key] = key === 'gpa' ? Math.round(value * 100) / 100 : value;
-  }
-  return result;
+/** The typed score as a number, null for empty, or undefined when it's out of range. */
+export function parseScore(key: keyof Academics, raw: string): number | null | undefined {
+  const text = raw.trim().replace(',', '.');
+  if (!text) return null;
+  const value = Number(text);
+  const field = SCORES.find((score) => score.key === key)!;
+  if (!Number.isFinite(value) || value < field.min || value > field.max) return undefined;
+  if (key !== 'gpa' && !Number.isInteger(value)) return undefined;
+  return key === 'gpa' ? Math.round(value * 100) / 100 : value;
+}
+
+export async function saveScore(key: keyof Academics, value: number | null) {
+  await apiFetch('/api/mobile/knowledge/academics', { method: 'PATCH', body: JSON.stringify({ field: key, value: value ?? '' }) });
+  await refreshKnowledge();
 }

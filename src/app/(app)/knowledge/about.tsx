@@ -2,49 +2,46 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
-import { AboutForm } from '@/components/about-form';
-import { TextFieldRegistry, useTextFieldValues } from '@/components/native-text-field-types';
 import { PageTitle } from '@/components/page-title';
+import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
 import {
-  type AboutDraft,
   aboutDraft,
-  aboutProblem,
   loadPlaces,
   needsUniversity,
   type Place,
   placeName,
-  saveAbout,
+  saveEducation,
+  saveInterests,
+  saveLocation,
   type School,
   schoolLabel,
   type StudyInterest,
 } from '@/features/knowledge/about';
-import { academicsDraft, parseAcademics } from '@/features/knowledge/academics';
+import { formatScore, parseScore, saveScore, SCORES } from '@/features/knowledge/academics';
 import { countryName } from '@/features/knowledge/country';
-import { pickFrom, type PickKind } from '@/features/knowledge/picker';
+import { pickFrom } from '@/features/knowledge/picker';
 import { siteUrl } from '@/lib/guide';
-import { EDUCATION_STAGES, type Knowledge, useKnowledge } from '@/lib/knowledge';
-import type { Draft, DraftValue } from '@/lib/knowledge-fields';
+import { type Academics, EDUCATION_STAGES, type Knowledge, useKnowledge } from '@/lib/knowledge';
 
-type Editing = { draft: AboutDraft; scores: Draft };
+const MAX_INTERESTS = 20;
+// Lets one search page finish closing before the next opens.
+const BETWEEN_PICKS_MS = 450;
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * About you: your education, where you live, your scores and what you'd like
- * to study (the website's General tab). Edit turns the page into a form;
- * schools, places and interests are chosen on a search page.
+ * to study (the website's General tab). Like the Settings app, you tap a row
+ * to change it, and it saves as soon as you choose.
  */
 export default function KnowledgeAboutScreen() {
-  const router = useRouter();
   const knowledge = useKnowledge();
-  const [editing, setEditing] = useState<Editing | null>(null);
-  const [saving, setSaving] = useState(false);
   // Country and state names come from unive-v2; shown once they've loaded.
   const [, setPlacesLoaded] = useState(false);
-  const fields = useTextFieldValues();
 
   useEffect(() => {
     loadPlaces().then(
@@ -54,193 +51,253 @@ export default function KnowledgeAboutScreen() {
   }, []);
 
   if (!knowledge) return null;
+  return <About knowledge={knowledge} />;
+}
 
-  function startEditing() {
-    void Haptics.selectionAsync();
-    setEditing({ draft: aboutDraft(knowledge!), scores: academicsDraft(knowledge!.static.academics) });
-  }
+function About({ knowledge }: { knowledge: Knowledge }) {
+  const router = useRouter();
+  const about = aboutDraft(knowledge);
+  const { academics } = knowledge.static;
+  // The row that's saving, which shows a spinner instead of its chevron.
+  const [busy, setBusy] = useState<string | null>(null);
 
-  async function pick(kind: PickKind) {
-    if (!editing) return;
-    const value = await pickFrom(router, kind, { country: editing.draft.country, state: editing.draft.state });
-    if (!value) return;
-    setEditing((current) => {
-      if (!current) return current;
-      const draft = current.draft;
-      switch (kind) {
-        case 'highSchool':
-          return { ...current, draft: { ...draft, highSchool: value as School } };
-        case 'university':
-          return { ...current, draft: { ...draft, university: value as School } };
-        case 'country': {
-          const code = (value as Place).code;
-          return { ...current, draft: { ...draft, country: code, state: code === 'US' ? draft.state : null } };
-        }
-        case 'state':
-          return { ...current, draft: { ...draft, state: (value as Place).code } };
-        case 'interest': {
-          const interest = value as StudyInterest;
-          if (draft.interests.some((entry) => entry.cipCode === interest.cipCode)) return current;
-          return { ...current, draft: { ...draft, interests: [...draft.interests, interest] } };
-        }
-      }
-    });
-  }
-
-  async function save() {
-    if (!editing) return;
-    const problem = aboutProblem(editing.draft);
-    // The exact text in each score field, including a last keystroke not yet reported.
-    const scores = parseAcademics({ ...editing.scores, ...fields.read() });
-    if (problem) {
-      Alert.alert('Almost there', problem);
-      return;
-    }
-    if (!scores) {
-      Alert.alert('Check your scores', 'GPA goes up to 4.00, ACT from 1 to 36, and each SAT part from 200 to 800.');
-      return;
-    }
-    setSaving(true);
+  async function run(row: string, save: () => Promise<void>) {
+    setBusy(row);
     try {
-      await saveAbout(aboutDraft(knowledge!), editing.draft, { before: knowledge!.static.academics, after: scores });
+      await save();
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setEditing(null);
     } catch (error) {
       Alert.alert("Couldn't save", error instanceof Error ? error.message : 'Please try again.');
     } finally {
-      setSaving(false);
+      setBusy(null);
     }
   }
 
+  // Education saves as a whole: a stage, a high school, and a university for
+  // college stages. Anything still missing is asked for next.
+  async function changeEducation(row: string, change: { stage?: string; highSchool?: School; university?: School }) {
+    let stage = change.stage ?? about.stage;
+    let highSchool = change.highSchool ?? about.highSchool;
+    let university = change.university ?? about.university;
+    let asked = false;
+    const ask = async (kind: 'stage' | 'highSchool' | 'university') => {
+      if (asked) await wait(BETWEEN_PICKS_MS);
+      asked = true;
+      return pickFrom(router, kind, { country: about.country, state: about.state });
+    };
+    if (!stage) stage = ((await ask('stage')) as Place | undefined)?.code ?? null;
+    if (!stage) return;
+    if (!highSchool) highSchool = ((await ask('highSchool')) as School | undefined) ?? null;
+    if (!highSchool) return;
+    if (needsUniversity(stage) && !university) university = ((await ask('university')) as School | undefined) ?? null;
+    if (needsUniversity(stage) && !university) return;
+    await run(row, () => saveEducation(stage!, highSchool!, university));
+  }
+
+  async function pickStage() {
+    const picked = (await pickFrom(router, 'stage', { selected: about.stage })) as Place | undefined;
+    if (picked && picked.code !== about.stage) {
+      // Moving to college asks for your university next.
+      if (needsUniversity(picked.code) && !about.university) await wait(BETWEEN_PICKS_MS);
+      await changeEducation('stage', { stage: picked.code });
+    }
+  }
+
+  async function pickSchool(kind: 'highSchool' | 'university') {
+    const picked = (await pickFrom(router, kind, { country: about.country, state: about.state })) as School | undefined;
+    if (picked) await changeEducation(kind, { [kind]: picked });
+  }
+
+  async function pickCountry() {
+    const picked = (await pickFrom(router, 'country', { selected: about.country })) as Place | undefined;
+    if (!picked || picked.code === about.country) return;
+    if (picked.code !== 'US') return run('country', () => saveLocation(picked.code, null));
+    // The US also needs a state.
+    await wait(BETWEEN_PICKS_MS);
+    const state = (await pickFrom(router, 'state', { selected: about.state })) as Place | undefined;
+    if (state) await run('country', () => saveLocation('US', state.code));
+  }
+
+  async function pickState() {
+    const picked = (await pickFrom(router, 'state', { selected: about.state })) as Place | undefined;
+    if (picked && picked.code !== about.state) await run('state', () => saveLocation('US', picked.code));
+  }
+
+  function editScore(key: keyof Academics) {
+    const field = SCORES.find((score) => score.key === key)!;
+    const current = formatScore(key, academics[key]) ?? '';
+    Alert.prompt(
+      field.label,
+      `From ${field.min} to ${field.max}. Leave it empty if you haven’t taken it.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          isPreferred: true,
+          onPress: (text?: string) => {
+            const value = parseScore(key, text ?? '');
+            if (value === undefined) {
+              Alert.alert(`Check your ${field.label}`, `It goes from ${field.min} to ${field.max}.`, [
+                { text: 'OK', onPress: () => editScore(key) },
+              ]);
+              return;
+            }
+            if (value !== academics[key]) void run(key, () => saveScore(key, value));
+          },
+        },
+      ],
+      'plain-text',
+      current,
+      field.keyboard,
+    );
+  }
+
+  async function addInterest() {
+    const picked = (await pickFrom(router, 'interest')) as StudyInterest | undefined;
+    if (!picked || about.interests.some((interest) => interest.cipCode === picked.cipCode)) return;
+    await run('interests', () => saveInterests([...about.interests, picked]));
+  }
+
+  function removeInterest(interest: StudyInterest) {
+    Alert.alert(`Remove ${interest.name}?`, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => void run('interests', () => saveInterests(about.interests.filter((entry) => entry.cipCode !== interest.cipCode))),
+      },
+    ]);
+  }
+
+  const countryLabel = placeName('country', about.country) ?? countryName(about.country);
+  const stateLabel = placeName('state', about.state) ?? about.state;
+
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerBackTitle: 'Library',
-          // While editing, Cancel replaces the back button (and the swipe back).
-          headerBackVisible: !editing,
-          gestureEnabled: !editing,
-          headerTitle: editing ? 'Edit About You' : '',
-        }}
-      />
-      {editing ? (
-        <>
-          <Stack.Toolbar placement="left">
-            <Stack.Toolbar.Button onPress={() => setEditing(null)}>Cancel</Stack.Toolbar.Button>
-          </Stack.Toolbar>
-          <Stack.Toolbar placement="right">
-            <Stack.Toolbar.Button variant="prominent" tintColor={Colors.olive} disabled={saving} onPress={save}>
-              {saving ? 'Saving…' : 'Done'}
-            </Stack.Toolbar.Button>
-          </Stack.Toolbar>
-        </>
-      ) : (
-        <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Button onPress={startEditing}>Edit</Stack.Toolbar.Button>
-        </Stack.Toolbar>
-      )}
+      <Stack.Screen options={{ headerBackTitle: 'Library' }} />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <PageTitle>About you</PageTitle>
+          <ThemedText type="small" themeColor="textSecondary">
+            Tap anything to change it.
+          </ThemedText>
+        </View>
 
-      {editing ? (
-        <Animated.View key="edit" entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={styles.flex}>
-          <TextFieldRegistry value={fields.registry}>
-            <AboutForm
-              draft={editing.draft}
-              onChange={(draft) => setEditing((current) => (current ? { ...current, draft } : current))}
-              scores={editing.scores}
-              onScoreChange={(key: string, value: DraftValue) =>
-                setEditing((current) => (current ? { ...current, scores: { ...current.scores, [key]: value } } : current))
-              }
-              onPick={(kind) => void pick(kind)}
-              countryLabel={placeName('country', editing.draft.country) ?? countryName(editing.draft.country)}
-              stateLabel={placeName('state', editing.draft.state) ?? editing.draft.state}
+        <Card icon="/isomorphic-icons/school.webp" title="Education">
+          <Row label="Stage" value={about.stage ? (EDUCATION_STAGES[about.stage] ?? null) : null} busy={busy === 'stage'} onPress={pickStage} />
+          <Row label="High school" value={schoolLabel(about.highSchool)} busy={busy === 'highSchool'} onPress={() => pickSchool('highSchool')} />
+          {needsUniversity(about.stage) ? (
+            <Row label="University" value={schoolLabel(about.university)} busy={busy === 'university'} onPress={() => pickSchool('university')} />
+          ) : null}
+        </Card>
+
+        <Card icon="/isomorphic-icons/map.webp" title="Location">
+          <Row label="Country" value={countryLabel} busy={busy === 'country'} onPress={pickCountry} />
+          {about.country === 'US' ? <Row label="State" value={stateLabel} busy={busy === 'state'} onPress={pickState} /> : null}
+        </Card>
+
+        <Card icon="/isomorphic-icons/academic-achievements.webp" title="Scores">
+          {SCORES.map((score) => (
+            <Row
+              key={score.key}
+              label={score.label}
+              value={formatScore(score.key, academics[score.key])}
+              placeholder="Add"
+              busy={busy === score.key}
+              onPress={() => editScore(score.key)}
             />
-          </TextFieldRegistry>
-        </Animated.View>
-      ) : (
-        <Animated.View key="view" entering={FadeIn.duration(220)} exiting={FadeOut.duration(120)} style={styles.flex}>
-          <AboutView knowledge={knowledge} />
-        </Animated.View>
-      )}
+          ))}
+        </Card>
+
+        <Card icon="/isomorphic-icons/lightbulb.webp" title="Study interests" busy={busy === 'interests'}>
+          <Animated.View layout={LinearTransition} style={styles.chips}>
+            {about.interests.map((interest) => (
+              <Animated.View key={interest.cipCode} entering={FadeIn} layout={LinearTransition} style={styles.chipCell}>
+                <PressableScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`${interest.name}. Tap to remove.`}
+                  onPress={() => removeInterest(interest)}
+                  style={styles.chip}>
+                  <ThemedText type="small" style={styles.chipText}>
+                    {interest.name}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textMuted">
+                    ✕
+                  </ThemedText>
+                </PressableScale>
+              </Animated.View>
+            ))}
+            {about.interests.length < MAX_INTERESTS ? (
+              <Animated.View layout={LinearTransition}>
+                <PressableScale haptic accessibilityRole="button" onPress={addInterest} style={[styles.chip, styles.addChip]}>
+                  <ThemedText type="small" style={styles.addText}>
+                    + Add interest
+                  </ThemedText>
+                </PressableScale>
+              </Animated.View>
+            ) : null}
+          </Animated.View>
+        </Card>
+      </ScrollView>
     </>
   );
 }
 
-function AboutView({ knowledge }: { knowledge: Knowledge }) {
-  const { academics } = knowledge.static;
-  const about = aboutDraft(knowledge);
-  const score = (value: number | null) => (value == null ? null : String(value));
-
-  return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <PageTitle>About you</PageTitle>
-        <ThemedText type="small" themeColor="textSecondary">
-          Your school, where you live, your scores and what you’d like to study.
-        </ThemedText>
-      </View>
-
-      <Card icon="/isomorphic-icons/school.webp" title="Education">
-        <Row label="Stage" value={about.stage ? (EDUCATION_STAGES[about.stage] ?? null) : null} />
-        <Row label="High school" value={schoolLabel(about.highSchool)} />
-        {needsUniversity(about.stage) ? <Row label="University" value={schoolLabel(about.university)} /> : null}
-      </Card>
-
-      <Card icon="/isomorphic-icons/map.webp" title="Location">
-        <Row label="Country" value={placeName('country', about.country) ?? countryName(about.country)} />
-        {about.country === 'US' ? <Row label="State" value={placeName('state', about.state) ?? about.state} /> : null}
-      </Card>
-
-      <Card icon="/isomorphic-icons/academic-achievements.webp" title="Scores">
-        <Row label="GPA" value={academics.gpa == null ? null : academics.gpa.toFixed(2)} />
-        <Row label="ACT" value={score(academics.actComposite)} />
-        <Row label="SAT Reading & Writing" value={score(academics.satReading)} />
-        <Row label="SAT Math" value={score(academics.satMath)} />
-      </Card>
-
-      <Card icon="/isomorphic-icons/lightbulb.webp" title="Study interests">
-        {about.interests.length === 0 ? (
-          <ThemedText themeColor="textMuted">None yet. Tap Edit to add what you’d like to study.</ThemedText>
-        ) : (
-          <View style={styles.chips}>
-            {about.interests.map((interest) => (
-              <View key={interest.cipCode} style={styles.chip}>
-                <ThemedText type="small">{interest.name}</ThemedText>
-              </View>
-            ))}
-          </View>
-        )}
-      </Card>
-    </ScrollView>
-  );
-}
-
-function Card({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
+function Card({ icon, title, busy, children }: { icon: string; title: string; busy?: boolean; children: React.ReactNode }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardHead}>
         <Image source={{ uri: siteUrl(icon) }} style={styles.cardIcon} contentFit="contain" transition={200} />
         <ThemedText style={styles.cardTitle}>{title}</ThemedText>
+        {busy ? <ActivityIndicator size="small" color={Colors.textSecondary} style={styles.cardBusy} /> : null}
       </View>
       {children}
     </View>
   );
 }
 
-function Row({ label, value }: { label: string; value: string | null }) {
+// A row you tap to change: the label, what's set, and a chevron.
+function Row({
+  label,
+  value,
+  placeholder = 'Choose',
+  busy,
+  onPress,
+}: {
+  label: string;
+  value: string | null;
+  placeholder?: string;
+  busy?: boolean;
+  onPress: () => void;
+}) {
   return (
-    <View style={styles.row}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${value ?? 'not set'}`}
+      disabled={busy}
+      onPress={() => {
+        void Haptics.selectionAsync();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
       <ThemedText themeColor="textSecondary" style={styles.rowLabel}>
         {label}
       </ThemedText>
-      <ThemedText themeColor={value ? 'text' : 'textMuted'} style={styles.rowValue}>
-        {value ?? '—'}
+      <ThemedText themeColor={value ? 'text' : 'olive'} style={styles.rowValue} numberOfLines={2}>
+        {value ?? placeholder}
       </ThemedText>
-    </View>
+      {busy ? (
+        <ActivityIndicator size="small" color={Colors.textSecondary} style={styles.rowAccessory} />
+      ) : (
+        <ThemedText themeColor="textMuted" style={[styles.chevron, styles.rowAccessory]}>
+          ›
+        </ThemedText>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   content: {
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.six,
@@ -250,25 +307,45 @@ const styles = StyleSheet.create({
   card: {
     ...Shape.card,
     backgroundColor: Colors.backgroundElement,
-    padding: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
     paddingHorizontal: Spacing.three + Spacing.one,
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.one },
   cardIcon: { width: 40, height: 40 },
-  cardTitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
+  cardTitle: { flex: 1, fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
+  cardBusy: { marginRight: Spacing.one },
   row: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: Spacing.three,
-    paddingTop: Spacing.two,
+    // Reaches the card's edges, so the pressed highlight does too.
+    marginHorizontal: -(Spacing.three + Spacing.one),
+    paddingHorizontal: Spacing.three + Spacing.one,
+    paddingVertical: Spacing.two + 2,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
   },
+  rowPressed: { backgroundColor: Colors.backgroundSelected },
   rowLabel: { flexShrink: 0 },
-  rowValue: { flexShrink: 1, textAlign: 'right' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  rowValue: { flex: 1, textAlign: 'right' },
+  rowAccessory: { width: 14, marginLeft: -Spacing.two },
+  chevron: { fontSize: 24, lineHeight: 26, textAlign: 'right' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingTop: Spacing.one, paddingBottom: Spacing.two },
+  chipCell: { maxWidth: '100%' },
   // Rounded rather than a pill: long subject names wrap onto two lines.
-  chip: { borderRadius: 14, borderCurve: 'continuous', backgroundColor: Colors.backgroundGrouped, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 1 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    backgroundColor: Colors.backgroundGrouped,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one + 2,
+  },
+  chipText: { flexShrink: 1 },
+  addChip: { backgroundColor: 'transparent', borderWidth: 1, borderStyle: 'dashed', borderColor: '#c5c9a4' },
+  addText: { fontFamily: Fonts.sansMedium, color: Colors.olive },
 });

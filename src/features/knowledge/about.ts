@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api';
-import { type Academics, type Knowledge, refreshKnowledge, saveAcademics } from '@/lib/knowledge';
+import { type Knowledge, refreshKnowledge } from '@/lib/knowledge';
 
 // About you: education, where you live, scores and study interests, saved the
 // way the website's dialogs save them (unive-v2's /api/mobile/knowledge/{kind}
@@ -76,49 +76,33 @@ export function aboutDraft(knowledge: Knowledge): AboutDraft {
   };
 }
 
-const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-
 function schoolInput(school: School) {
   if (school.type === 'listed') return { type: 'listed', nces: school.nces };
   return school;
 }
 
-/** What's missing before the draft can be saved, or null. */
-export function aboutProblem(draft: AboutDraft): string | null {
-  if (!draft.stage) return 'Choose your stage of education.';
-  if (!draft.highSchool) return 'Choose your high school, or Homeschooled.';
-  if (needsUniversity(draft.stage) && !draft.university) return 'Choose your university.';
-  if (!draft.country) return 'Choose your country.';
-  if (draft.country === 'US' && !draft.state) return 'Choose your state.';
-  return null;
-}
-
 async function patch(kind: string, body: unknown) {
   await apiFetch(`/api/mobile/knowledge/${kind}`, { method: 'PATCH', body: JSON.stringify(body) });
+  // Reload, so the page and the completion score show the change.
+  await refreshKnowledge();
 }
 
-/** Saves only the parts that changed, then reloads the library once. */
-export async function saveAbout(before: AboutDraft, after: AboutDraft, scores: { before: Academics; after: Academics }) {
-  const educationChanged =
-    before.stage !== after.stage ||
-    !sameJson(before.highSchool, after.highSchool) ||
-    (needsUniversity(after.stage) && !sameJson(before.university, after.university));
-  if (educationChanged) {
-    await patch('education', {
-      educationStage: after.stage,
-      highSchool: schoolInput(after.highSchool!),
-      ...(needsUniversity(after.stage) ? { university: schoolInput(after.university!) } : {}),
-    });
-  }
-  if (before.country !== after.country || (after.country === 'US' && before.state !== after.state)) {
-    await patch('location', after.country === 'US' ? { country: 'US', state: after.state } : { country: after.country });
-  }
-  if (!sameJson(before.interests.map((i) => i.cipCode), after.interests.map((i) => i.cipCode))) {
-    await patch('interests', { codes: after.interests.map((interest) => interest.cipCode) });
-  }
-  await saveAcademics(scores.before, scores.after, { reload: false });
-  // Once, so every change shows (and the completion score moves).
-  await refreshKnowledge();
+// Each saved on its own, as soon as it's chosen (the website saves the same groups).
+
+export function saveEducation(stage: string, highSchool: School, university: School | null) {
+  return patch('education', {
+    educationStage: stage,
+    highSchool: schoolInput(highSchool),
+    ...(needsUniversity(stage) && university ? { university: schoolInput(university) } : {}),
+  });
+}
+
+export function saveLocation(country: string, state: string | null) {
+  return patch('location', country === 'US' ? { country: 'US', state } : { country });
+}
+
+export function saveInterests(interests: StudyInterest[]) {
+  return patch('interests', { codes: interests.map((interest) => interest.cipCode) });
 }
 
 // Searching.

@@ -215,18 +215,6 @@ export function deleteItem(kind: KnowledgeKind, id: string) {
   return write(kind, 'DELETE', { id });
 }
 
-/** Saves each changed score (the website saves them one at a time too), then reloads unless told not to. */
-export async function saveAcademics(before: Academics, after: Academics, { reload = true } = {}) {
-  const fields = (Object.keys(after) as (keyof Academics)[]).filter((field) => before[field] !== after[field]);
-  for (const field of fields) {
-    await apiFetch('/api/mobile/knowledge/academics', {
-      method: 'PATCH',
-      body: JSON.stringify({ field, value: after[field] ?? '' }),
-    });
-  }
-  if (fields.length && reload) await refreshKnowledge();
-}
-
 // Dates: stored "YYYY-MM-DD", sent as "YYYY-MM" (month precision, like the website).
 
 export function toYearMonth(date: Date) {

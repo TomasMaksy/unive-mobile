@@ -7,9 +7,11 @@ import { PageTitle } from '@/components/page-title';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { loadPlaces, type Place, searchInterests, searchSchools } from '@/features/knowledge/about';
+import { EDUCATION_STAGES } from '@/lib/knowledge';
 import { finishPick, type Picked, type PickKind } from '@/features/knowledge/picker';
 
 const COPY: Record<PickKind, { title: string; placeholder: string }> = {
+  stage: { title: 'Stage', placeholder: 'Search stages' },
   highSchool: { title: 'High school', placeholder: 'Search high schools' },
   university: { title: 'University', placeholder: 'Search universities' },
   country: { title: 'Country', placeholder: 'Search countries' },
@@ -19,6 +21,9 @@ const COPY: Record<PickKind, { title: string; placeholder: string }> = {
 
 type Row = { key: string; title: string; detail?: string | null; value: Picked; accent?: boolean };
 
+// Stages pick like places: a code and its name.
+const STAGES: Place[] = Object.entries(EDUCATION_STAGES).map(([code, name]) => ({ code, name }));
+
 const CUSTOM_NAME_MAX = 50;
 
 /**
@@ -26,7 +31,14 @@ const CUSTOM_NAME_MAX = 50;
  * matches, like picking a country in the Settings app. Opened from About you.
  */
 export default function PickScreen() {
-  const { kind, country, state } = useLocalSearchParams<{ kind: PickKind; country?: string; state?: string }>();
+  const { kind, pick, country, state, selected } = useLocalSearchParams<{
+    kind: PickKind;
+    pick: string;
+    country?: string;
+    state?: string;
+    /** What's chosen now, ticked in the list. */
+    selected?: string;
+  }>();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Row[] | null>(null);
@@ -34,7 +46,7 @@ export default function PickScreen() {
   const copy = COPY[kind];
 
   // Closing without a choice tells the page that asked.
-  useEffect(() => () => finishPick(), []);
+  useEffect(() => () => finishPick(pick), [pick]);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +73,7 @@ export default function PickScreen() {
 
   function choose(value: Picked) {
     void Haptics.selectionAsync();
-    finishPick(value);
+    finishPick(pick, value);
     router.back();
   }
 
@@ -99,7 +111,7 @@ export default function PickScreen() {
       <Stack.Screen options={{ headerBackTitle: 'Back' }} />
       <Stack.SearchBar
         placeholder={copy.placeholder}
-        autoFocus={kind !== 'state'}
+        autoFocus={kind !== 'state' && kind !== 'stage'}
         hideWhenScrolling={false}
         autoCapitalize="none"
         tintColor={Colors.olive}
@@ -123,12 +135,15 @@ export default function PickScreen() {
               index === rows.length - 1 && !canAddCustom && styles.last,
               pressed && styles.pressed,
             ]}>
-            <ThemedText style={[styles.rowTitle, item.accent && { color: Colors.olive }]}>{item.title}</ThemedText>
-            {item.detail ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                {item.detail}
-              </ThemedText>
-            ) : null}
+            <View style={styles.rowText}>
+              <ThemedText style={[styles.rowTitle, item.accent && { color: Colors.olive }]}>{item.title}</ThemedText>
+              {item.detail ? (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {item.detail}
+                </ThemedText>
+              ) : null}
+            </View>
+            {item.key === selected ? <ThemedText style={styles.tick}>✓</ThemedText> : null}
           </Pressable>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -139,10 +154,12 @@ export default function PickScreen() {
                 accessibilityRole="button"
                 onPress={addCustom}
                 style={({ pressed }) => [styles.row, styles.last, rows.length === 0 && styles.first, styles.addRow, pressed && styles.pressed]}>
-                <ThemedText style={[styles.rowTitle, { color: Colors.olive }]}>{`Add “${query.trim()}”`}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Not in the list? Add it by name.
-                </ThemedText>
+                <View style={styles.rowText}>
+                  <ThemedText style={[styles.rowTitle, { color: Colors.olive }]}>{`Add “${query.trim()}”`}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Not in the list? Add it by name.
+                  </ThemedText>
+                </View>
               </Pressable>
             ) : null}
             {results === null && !failed ? <ActivityIndicator style={styles.status} color={Colors.textSecondary} /> : null}
@@ -164,9 +181,8 @@ export default function PickScreen() {
 }
 
 async function search(kind: PickKind, query: string, state: string | null): Promise<Row[]> {
-  if (kind === 'country' || kind === 'state') {
-    const places = await loadPlaces();
-    const list: Place[] = kind === 'country' ? places.countries : places.states;
+  if (kind === 'country' || kind === 'state' || kind === 'stage') {
+    const list: Place[] = kind === 'stage' ? STAGES : await loadPlaces().then((places) => (kind === 'country' ? places.countries : places.states));
     const needle = query.trim().toLowerCase();
     return list
       .filter((place) => !needle || place.name.toLowerCase().includes(needle) || place.code.toLowerCase() === needle)
@@ -194,11 +210,15 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.six },
   title: { paddingHorizontal: Spacing.one, marginBottom: Spacing.three },
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.backgroundElement,
     paddingVertical: Spacing.two + Spacing.one,
     paddingHorizontal: Spacing.three,
-    gap: 2,
+    gap: Spacing.two,
   },
+  rowText: { flex: 1, gap: 2 },
+  tick: { fontFamily: Fonts.sansSemiBold, fontSize: 17, color: Colors.olive },
   first: { borderTopLeftRadius: 20, borderTopRightRadius: 20, borderCurve: 'continuous' },
   last: { borderBottomLeftRadius: 20, borderBottomRightRadius: 20, borderCurve: 'continuous' },
   addRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Colors.border },
