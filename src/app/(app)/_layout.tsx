@@ -27,18 +27,11 @@ export default function SignedInLayout() {
       <Stack.Screen name="invite" />
       {/* Opened from the profile: ordinary pushes, no navigation bar (see linkedScreen). */}
       <Stack.Screen name="knowledge/index" options={linkedScreen} />
-      {/* Adding or editing an item: a sheet over the library, with Cancel and Save. */}
-      <Stack.Screen
-        name="knowledge/[kind]"
-        options={{
-          presentation: 'modal',
-          headerShown: true,
-          headerShadowVisible: false,
-          headerTintColor: Colors.text,
-          headerStyle: { backgroundColor: Colors.backgroundGrouped },
-          contentStyle: { backgroundColor: Colors.backgroundGrouped },
-        }}
-      />
+      {/* About you, each section (Activities…) and each item: ordinary pushes.
+          An item's page edits in place (Edit, then Done), like a contact card. */}
+      <Stack.Screen name="knowledge/about" options={linkedScreen} />
+      <Stack.Screen name="knowledge/[kind]/index" options={linkedScreen} />
+      <Stack.Screen name="knowledge/[kind]/item" options={linkedScreen} />
       <Stack.Screen name="guide/index" options={linkedScreen} />
       {/* Zooms open from its card (Apple's zoom transition), so no navigation header
           (it would stay put while the page zooms); the page has its own close button. */}
