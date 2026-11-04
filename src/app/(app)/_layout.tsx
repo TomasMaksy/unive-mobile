@@ -25,7 +25,9 @@ export default function SignedInLayout() {
       <Stack.Screen name="knowledge" options={{ ...linkedScreen, title: 'Knowledge Library' }} />
       <Stack.Screen name="guide" options={{ ...linkedScreen, title: 'Application Guide' }} />
       <Stack.Screen name="mentors" options={{ ...linkedScreen, title: 'Mentors' }} />
-      <Stack.Screen name="settings" options={{ ...linkedScreen, title: 'Settings' }} />
+      {/* A small title, like the Settings app's own inner pages (its SwiftUI form can't
+          collapse a large one). */}
+      <Stack.Screen name="settings" options={{ ...linkedScreen, headerLargeTitle: false, title: 'Settings' }} />
     </Stack>
   );
 }
