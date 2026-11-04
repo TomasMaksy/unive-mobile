@@ -3,8 +3,10 @@
 # Your ngrok sign-in (authtoken) stays in ngrok's own config file.
 version: 3
 endpoints:
-  # Metro serves the app's code to Expo Go. Requests for /api/… go on to
-  # unive-v2 (sign-in, chat, profile), the way unive.ai serves both.
+  # Metro serves the app's code to Expo Go. unive-v2's own addresses go on
+  # to it, the way unive.ai serves them: /api/… (sign-in, chat, profile),
+  # /_next/… (built images) and its public/ folders (pictures, the guide's
+  # narration). Add a folder here when unive-v2's public/ gets a new one.
   - name: unive-mobile
     url: https://scepterless-darrin-subparallel.ngrok-free.dev
     upstream:
@@ -12,7 +14,7 @@ endpoints:
     traffic_policy:
       on_http_request:
         - expressions:
-            - "req.url.path.startsWith('/api/')"
+            - "req.url.path.matches('^/(api|_next|about-story|about-us|affiliate-assets|audio|badges|blogs|brand|features|file-types|fonts|institutions|isomorphic-icons|knwoledge-img-seq|landing|logo|mentors|partnerships|premium|pricing|projects|quiz|reviews|scenes|scripts|section-specific|seo|seo-pages|trust-badges|tutors|unis|unis-gray|use-cases)/')"
           actions:
             - type: forward-internal
               config:

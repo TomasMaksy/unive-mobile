@@ -23,7 +23,10 @@ export default function SignedInLayout() {
       <Stack.Screen name="profile" />
       {/* Opened from the profile: ordinary pushes with a large native title and a back button. */}
       <Stack.Screen name="knowledge" options={{ ...linkedScreen, title: 'Knowledge Library' }} />
-      <Stack.Screen name="guide" options={{ ...linkedScreen, title: 'Application Guide' }} />
+      <Stack.Screen name="guide/index" options={{ ...linkedScreen, title: 'Application Guide' }} />
+      {/* Zooms open from its card (Apple's zoom transition), so no navigation header
+          (it would stay put while the page zooms); the page has its own close button. */}
+      <Stack.Screen name="guide/[topic]" />
       <Stack.Screen name="mentors" options={{ ...linkedScreen, title: 'Mentors' }} />
       {/* A small title, like the Settings app's own inner pages (its SwiftUI form can't
           collapse a large one). */}

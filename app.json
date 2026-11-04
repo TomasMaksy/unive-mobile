@@ -41,6 +41,12 @@
           "cameraPermission": "Unive uses the camera to take your profile picture.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {
