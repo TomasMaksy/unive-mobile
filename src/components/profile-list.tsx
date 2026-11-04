@@ -1,6 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { PressableScale } from '@/components/pressable-scale';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { PROFILE_LINKS, type ProfileScreen } from '@/components/profile-links';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Shape, Spacing } from '@/constants/theme';
@@ -8,6 +10,12 @@ import { Colors, Shape, Spacing } from '@/constants/theme';
 export type ProfileListProps = {
   name: string;
   email: string;
+  /** Your profile picture, or null for your initial. */
+  imageUrl: string | null;
+  /** A new picture is uploading. */
+  uploadingPhoto: boolean;
+  /** Tapping your picture: take, choose or remove one. */
+  onEditPhoto: () => void;
   onInvite: () => void;
   onOpen: (screen: ProfileScreen) => void;
   onSignOut: () => void;
@@ -17,10 +25,22 @@ export type ProfileListProps = {
  * Android and web fallback. On iOS, profile-list.ios.tsx renders a native
  * SwiftUI grouped list instead.
  */
-export function ProfileList({ name, email, onInvite, onOpen, onSignOut }: ProfileListProps) {
+export function ProfileList({
+  name,
+  email,
+  imageUrl,
+  uploadingPhoto,
+  onEditPhoto,
+  onInvite,
+  onOpen,
+  onSignOut,
+}: ProfileListProps) {
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
       <View style={styles.header}>
+        <PressableScale accessibilityRole="button" accessibilityLabel="Change profile picture" onPress={onEditPhoto}>
+          <ProfileAvatar size={104} imageUrl={imageUrl} name={name || email} busy={uploadingPhoto} />
+        </PressableScale>
         <ThemedText type="subtitle">{name}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {email}

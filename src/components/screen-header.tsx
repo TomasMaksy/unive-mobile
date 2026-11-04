@@ -1,12 +1,13 @@
-import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { PressableScale } from '@/components/pressable-scale';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { authClient } from '@/lib/auth-client';
+import { useProfileImage } from '@/lib/profile-image';
 
 type ScreenHeaderProps = {
   /** Leave out for just the button row, e.g. in the AI chat. */
@@ -34,20 +35,13 @@ export function ScreenHeader({ title, left, right }: ScreenHeaderProps) {
 // (Apple's zoom transition, iOS 18+), and pinch or swipe down zooms it back.
 function Avatar() {
   const { data: session } = authClient.useSession();
-  const user = session?.user;
-  const initial = (user?.name || user?.email || '?').trim().charAt(0).toUpperCase();
+  const imageUrl = useProfileImage();
 
   return (
     <Link href="/profile" asChild>
       <Link.Trigger withAppleZoom>
         <PressableScale accessibilityRole="button" accessibilityLabel="Profile" pressedScale={0.9} haptic>
-          <View style={styles.avatar}>
-            {user?.image ? (
-              <Image source={user.image} style={styles.image} />
-            ) : (
-              <Text style={styles.initial}>{initial}</Text>
-            )}
-          </View>
+          <ProfileAvatar size={AVATAR_SIZE} imageUrl={imageUrl} name={session?.user.name || session?.user.email || ''} />
         </PressableScale>
       </Link.Trigger>
     </Link>
@@ -67,23 +61,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: AVATAR_SIZE,
-  },
-  avatar: {
-    ...Shape.pill,
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.backgroundSelected,
-  },
-  image: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-  },
-  initial: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 16,
-    color: Colors.text,
   },
 });

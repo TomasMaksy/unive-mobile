@@ -33,7 +33,15 @@
           "imageWidth": 72
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Unive uses your photos to set your profile picture.",
+          "cameraPermission": "Unive uses the camera to take your profile picture.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

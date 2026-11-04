@@ -7,8 +7,9 @@ set -euo pipefail
 
 # On a phone, `localhost` is the phone itself, so the app gets this Mac's
 # Wi-Fi address instead. It's the same address Metro serves the app from.
+# Set EXPO_PUBLIC_API_URL=http://localhost:3000 to use the Simulator only.
 LAN_IP=$(ipconfig getifaddr en0 || ipconfig getifaddr en1 || true)
-API_URL=http://${LAN_IP:-localhost}:3000
+API_URL=${EXPO_PUBLIC_API_URL:-http://${LAN_IP:-localhost}:3000}
 WEB_DIR="$(cd "$(dirname "$0")/../.." && pwd)/unive-v22"
 
 if lsof -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then

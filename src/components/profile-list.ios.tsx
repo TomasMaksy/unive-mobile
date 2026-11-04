@@ -1,8 +1,7 @@
 import { Host } from '@expo/ui';
-import { Button, HStack, Image, List, Section, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { Button, HStack, Image, List, RNHostView, Section, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import {
   background,
-  clipShape,
   font,
   foregroundStyle,
   frame,
@@ -15,6 +14,8 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
+import { PressableScale } from '@/components/pressable-scale';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import type { ProfileListProps } from '@/components/profile-list';
 import { PROFILE_LINKS } from '@/components/profile-links';
 import { Colors } from '@/constants/theme';
@@ -26,22 +27,33 @@ const NAME_SIZE = 32;
  * uses, laid out like Revolut's: your photo and name on top, inviting friends,
  * then the rest of Unive.
  */
-export function ProfileList({ name, email, onInvite, onOpen, onSignOut }: ProfileListProps) {
-  const initial = (name || email || '?').trim().charAt(0).toUpperCase();
+export function ProfileList({
+  name,
+  email,
+  imageUrl,
+  uploadingPhoto,
+  onEditPhoto,
+  onInvite,
+  onOpen,
+  onSignOut,
+}: ProfileListProps) {
 
   return (
     <Host style={{ flex: 1 }} colorScheme="light">
       <List modifiers={[listStyle('insetGrouped'), scrollContentBackground('hidden'), background(Colors.background)]}>
         <Section modifiers={[listRowBackground('#00000000')]}>
           <VStack spacing={8} modifiers={[frame({ maxWidth: 10000 }), padding({ top: 36, bottom: 8 })]}>
-            <ZStack
-              modifiers={[
-                frame({ width: 104, height: 104 }),
-                background(Colors.backgroundSelected),
-                clipShape('circle'),
-              ]}>
-              <Text modifiers={[font({ size: 42, weight: 'semibold' }), foregroundStyle(Colors.text)]}>{initial}</Text>
-            </ZStack>
+            {/* Your picture is a React Native view (expo-image loads it), placed in the SwiftUI list. */}
+            <RNHostView matchContents>
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Change profile picture"
+                pressedScale={0.94}
+                haptic
+                onPress={onEditPhoto}>
+                <ProfileAvatar size={104} imageUrl={imageUrl} name={name || email} busy={uploadingPhoto} />
+              </PressableScale>
+            </RNHostView>
             <Text
               modifiers={[
                 font({ family: 'AveriaSerifLibre-Regular', size: NAME_SIZE }),
