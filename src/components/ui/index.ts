@@ -1,8 +1,7 @@
 /**
  * The design system's components. Screens build from these:
  * `import { Button, Card, Text } from '@/components/ui'`.
- * See DESIGN.md for when to use which, and the /design screen (dev only)
- * to see every one of them in every state.
+ * See DESIGN.md for when to use which.
  */
 export { Badge } from './badge';
 export { Button, type ButtonSize, type ButtonVariant } from './button';

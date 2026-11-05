@@ -106,7 +106,7 @@ One curve for nearly everything: `easeUnive`, cubic-bezier(0.22, 1, 0.36, 1). It
 - Haptics: `tap` (finger lands on a button), `tick` (something snapped), `thud` (a heavy thing landed), `success`, `error`.
 - Reduce Motion: loaders show the still icon, skeletons stop sweeping, entrances are skipped.
 - Animate with Reanimated's `.get()` / `.set()` on shared values, never `.value =` (the React Compiler can skip those writes).
-- A drawing that changes every frame (the loader) is drawn with **Skia** (`@shopify/react-native-skia`). Still artwork (the logo) uses `react-native-svg`. An animated SVG path makes React Native redo layout on every frame; six of them took the Design screen down to 6 fps.
+- A drawing that changes every frame (the loader) is drawn with **Skia** (`@shopify/react-native-skia`). Still artwork (the logo) uses `react-native-svg`. An animated SVG path makes React Native redo layout on every frame; six of them took a screen of loaders down to 6 fps.
 
 ## Screen rules
 
@@ -121,4 +121,3 @@ One curve for nearly everything: `easeUnive`, cubic-bezier(0.22, 1, 0.36, 1). It
 - **A value is wrong or missing:** change it in `unive-brand` first, then copy it into `src/theme/palette.ts` and run `npm run brand:check`.
 - **A screen needs something the system lacks** (a new colour role, a type step, a button variant): add it to `src/theme` or `src/components/ui` in its own commit, with a comment saying what it's for. Never work around it in the screen.
 - **A genuine one-off** (an optical nudge, a size that scales with its container) may disable the lint rule on that line, with the reason: `// eslint-disable-next-line no-restricted-syntax -- initial scales with the avatar`.
-- To see every component in every state, open the **Design** screen in a dev build: `unive:///design` (it doesn't exist in production builds).

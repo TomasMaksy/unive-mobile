@@ -50,8 +50,6 @@ export default function RootLayout() {
             <Stack.Protected guard={!session}>
               <Stack.Screen name="sign-in" />
             </Stack.Protected>
-            {/* The design system gallery (DESIGN.md): development builds only, signed in or not. */}
-            <Stack.Screen name="design" />
           </Stack>
         )}
       </ThemeProvider>
