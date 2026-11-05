@@ -1,12 +1,12 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import type { SearchBarCommands } from 'react-native-screens';
 
 import { PageTitle } from '@/components/page-title';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Loading, Text } from '@/components/ui';
+import { colors, haptics, shape, space } from '@/theme';
 import { loadPlaces, type Place, searchInterests, searchSchools } from '@/features/knowledge/about';
 import { finishPick, type Picked, type PickKind } from '@/features/knowledge/picker';
 
@@ -19,7 +19,6 @@ const COPY: Record<Exclude<PickKind, 'stage'>, { title: string; placeholder: str
 };
 
 type Row = { key: string; title: string; detail?: string | null; value: Picked; accent?: boolean };
-
 
 const CUSTOM_NAME_MAX = 50;
 /** Lists longer than this open with the search field focused, ready to type. */
@@ -84,7 +83,7 @@ export default function PickScreen() {
   }, [kind, query, state]);
 
   function choose(value: Picked) {
-    void Haptics.selectionAsync();
+    haptics.tick();
     finishPick(pick, value);
     router.back();
   }
@@ -126,7 +125,7 @@ export default function PickScreen() {
         ref={searchBar}
         hideWhenScrolling={false}
         autoCapitalize="none"
-        tintColor={Colors.olive}
+        tintColor={colors.accent}
         onChangeText={(event) => setQuery(event.nativeEvent.text)}
       />
       <FlatList
@@ -148,14 +147,18 @@ export default function PickScreen() {
               pressed && styles.pressed,
             ]}>
             <View style={styles.rowText}>
-              <ThemedText style={[styles.rowTitle, item.accent && { color: Colors.olive }]}>{item.title}</ThemedText>
+              <Text variant="headline" color={item.accent ? 'accent' : 'text'}>
+                {item.title}
+              </Text>
               {item.detail ? (
-                <ThemedText type="small" themeColor="textSecondary">
+                <Text variant="small" color="textSecondary">
                   {item.detail}
-                </ThemedText>
+                </Text>
               ) : null}
             </View>
-            {item.key === selected ? <ThemedText style={styles.tick}>✓</ThemedText> : null}
+            {item.key === selected ? (
+              <SymbolView name="checkmark" size={17} weight="semibold" tintColor={colors.accent} accessibilityLabel="Selected" />
+            ) : null}
           </Pressable>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -167,23 +170,23 @@ export default function PickScreen() {
                 onPress={addCustom}
                 style={({ pressed }) => [styles.row, styles.last, rows.length === 0 && styles.first, styles.addRow, pressed && styles.pressed]}>
                 <View style={styles.rowText}>
-                  <ThemedText style={[styles.rowTitle, { color: Colors.olive }]}>{`Add “${query.trim()}”`}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
+                  <Text variant="headline" color="accent">{`Add “${query.trim()}”`}</Text>
+                  <Text variant="small" color="textSecondary">
                     Not in the list? Add it by name.
-                  </ThemedText>
+                  </Text>
                 </View>
               </Pressable>
             ) : null}
-            {results === null && !failed ? <ActivityIndicator style={styles.status} color={Colors.textSecondary} /> : null}
+            {results === null && !failed ? <Loading fill={false} /> : null}
             {failed ? (
-              <ThemedText themeColor="textSecondary" style={styles.status}>
+              <Text color="textSecondary" align="center" style={styles.status}>
                 Couldn’t search right now. Check your connection.
-              </ThemedText>
+              </Text>
             ) : null}
             {results?.length === 0 && !canAddCustom && query ? (
-              <ThemedText themeColor="textSecondary" style={styles.status}>
+              <Text color="textSecondary" align="center" style={styles.status}>
                 {`No results for “${query}”.`}
-              </ThemedText>
+              </Text>
             ) : null}
           </>
         }
@@ -219,23 +222,21 @@ async function search(kind: Exclude<PickKind, 'stage'>, query: string, state: st
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.six },
-  title: { paddingHorizontal: Spacing.one, marginBottom: Spacing.three },
+  content: { paddingHorizontal: space[4], paddingBottom: space[16] },
+  title: { paddingHorizontal: space[1], marginBottom: space[4] },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundElement,
-    paddingVertical: Spacing.two + Spacing.one,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.two,
+    backgroundColor: colors.surface,
+    paddingVertical: space[3],
+    paddingHorizontal: space[4],
+    gap: space[2],
   },
-  rowText: { flex: 1, gap: 2 },
-  tick: { fontFamily: Fonts.sansSemiBold, fontSize: 17, color: Colors.olive },
-  first: { borderTopLeftRadius: 20, borderTopRightRadius: 20, borderCurve: 'continuous' },
-  last: { borderBottomLeftRadius: 20, borderBottomRightRadius: 20, borderCurve: 'continuous' },
-  addRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Colors.border },
-  pressed: { backgroundColor: Colors.backgroundSelected },
-  rowTitle: { fontFamily: Fonts.sansMedium, fontSize: 16, lineHeight: 22 },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: Colors.border, marginLeft: Spacing.three },
-  status: { textAlign: 'center', marginTop: Spacing.four },
+  rowText: { flex: 1, gap: space[0.5] },
+  first: { borderTopLeftRadius: shape.card.borderRadius, borderTopRightRadius: shape.card.borderRadius, borderCurve: 'continuous' },
+  last: { borderBottomLeftRadius: shape.card.borderRadius, borderBottomRightRadius: shape.card.borderRadius, borderCurve: 'continuous' },
+  addRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  pressed: { backgroundColor: colors.fill },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginLeft: space[4] },
+  status: { marginTop: space[6] },
 });

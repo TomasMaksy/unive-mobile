@@ -1,14 +1,13 @@
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
 import { PageTitle } from '@/components/page-title';
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { Loader, PressableScale, Text } from '@/components/ui';
+import { alpha, colors, haptics, shape, space } from '@/theme';
 import {
   aboutDraft,
   loadPlaces,
@@ -66,7 +65,7 @@ function About({ knowledge }: { knowledge: Knowledge }) {
     setBusy(row);
     try {
       await save();
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
     } catch (error) {
       Alert.alert("Couldn't save", error instanceof Error ? error.message : 'Please try again.');
     } finally {
@@ -157,9 +156,9 @@ function About({ knowledge }: { knowledge: Knowledge }) {
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <PageTitle>About you</PageTitle>
-          <ThemedText type="small" themeColor="textSecondary">
+          <Text variant="small" color="textSecondary">
             Tap anything to change it.
-          </ThemedText>
+          </Text>
         </View>
 
         <Card icon="/isomorphic-icons/school.webp" title="Education">
@@ -196,21 +195,21 @@ function About({ knowledge }: { knowledge: Knowledge }) {
                   accessibilityLabel={`${interest.name}. Tap to remove.`}
                   onPress={() => removeInterest(interest)}
                   style={styles.chip}>
-                  <ThemedText type="small" style={styles.chipText}>
+                  <Text variant="small" style={styles.chipText}>
                     {interest.name}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textMuted">
+                  </Text>
+                  <Text variant="small" color="textMuted">
                     ✕
-                  </ThemedText>
+                  </Text>
                 </PressableScale>
               </Animated.View>
             ))}
             {about.interests.length < MAX_INTERESTS ? (
               <Animated.View layout={LinearTransition}>
                 <PressableScale haptic accessibilityRole="button" onPress={addInterest} style={[styles.chip, styles.addChip]}>
-                  <ThemedText type="small" style={styles.addText}>
+                  <Text variant="label" color="accent">
                     + Add interest
-                  </ThemedText>
+                  </Text>
                 </PressableScale>
               </Animated.View>
             ) : null}
@@ -226,8 +225,10 @@ function Card({ icon, title, busy, children }: { icon: string; title: string; bu
     <View style={styles.card}>
       <View style={styles.cardHead}>
         <Image source={{ uri: siteUrl(icon) }} style={styles.cardIcon} contentFit="contain" transition={200} />
-        <ThemedText style={styles.cardTitle}>{title}</ThemedText>
-        {busy ? <ActivityIndicator size="small" color={Colors.textSecondary} style={styles.cardBusy} /> : null}
+        <Text variant="headline" style={styles.flex}>
+          {title}
+        </Text>
+        {busy ? <Loader size={14} color={colors.textSecondary} style={styles.cardBusy} /> : null}
       </View>
       {children}
     </View>
@@ -254,76 +255,73 @@ function Row({
       accessibilityLabel={`${label}, ${value ?? 'not set'}`}
       disabled={busy}
       onPress={() => {
-        void Haptics.selectionAsync();
+        haptics.tick();
         onPress();
       }}
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
-      <ThemedText themeColor="textSecondary" style={styles.rowLabel}>
+      <Text color="textSecondary" style={styles.rowLabel}>
         {label}
-      </ThemedText>
-      <ThemedText themeColor={value ? 'text' : 'olive'} style={styles.rowValue} numberOfLines={2}>
+      </Text>
+      <Text color={value ? 'text' : 'accent'} style={styles.rowValue} numberOfLines={2}>
         {value ?? placeholder}
-      </ThemedText>
-      {busy ? (
-        <ActivityIndicator size="small" color={Colors.textSecondary} style={styles.rowAccessory} />
-      ) : (
-        <ThemedText themeColor="textMuted" style={[styles.chevron, styles.rowAccessory]}>
-          ›
-        </ThemedText>
-      )}
+      </Text>
+      <View style={styles.rowAccessory}>
+        {busy ? (
+          <Loader size={12} color={colors.textSecondary} />
+        ) : (
+          <SymbolView name="chevron.right" size={14} weight="semibold" tintColor={colors.textMuted} />
+        )}
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
+    paddingHorizontal: space[4],
+    paddingBottom: space[16],
+    gap: space[4],
   },
-  header: { paddingHorizontal: Spacing.one, gap: Spacing.one, marginBottom: Spacing.one },
+  header: { paddingHorizontal: space[1], gap: space[1], marginBottom: space[1] },
   card: {
-    ...Shape.card,
-    backgroundColor: Colors.backgroundElement,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.two,
-    paddingHorizontal: Spacing.three + Spacing.one,
-    gap: Spacing.one,
+    ...shape.card,
+    backgroundColor: colors.surface,
+    paddingTop: space[4],
+    paddingBottom: space[2],
+    paddingHorizontal: space[5],
+    gap: space[1],
   },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.one },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginBottom: space[1] },
   cardIcon: { width: 40, height: 40 },
-  cardTitle: { flex: 1, fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
-  cardBusy: { marginRight: Spacing.one },
+  flex: { flex: 1 },
+  cardBusy: { marginRight: space[1] },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: space[4],
     // Reaches the card's edges, so the pressed highlight does too.
-    marginHorizontal: -(Spacing.three + Spacing.one),
-    paddingHorizontal: Spacing.three + Spacing.one,
-    paddingVertical: Spacing.two + 2,
+    marginHorizontal: -space[5],
+    paddingHorizontal: space[5],
+    paddingVertical: space[2] + 2,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
-  rowPressed: { backgroundColor: Colors.backgroundSelected },
+  rowPressed: { backgroundColor: colors.fill },
   rowLabel: { flexShrink: 0 },
   rowValue: { flex: 1, textAlign: 'right' },
-  rowAccessory: { width: 14, marginLeft: -Spacing.two },
-  chevron: { fontSize: 24, lineHeight: 26, textAlign: 'right' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingTop: Spacing.one, paddingBottom: Spacing.two },
+  rowAccessory: { width: 18, alignItems: 'flex-end', marginLeft: -space[2] },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], paddingTop: space[1], paddingBottom: space[2] },
   chipCell: { maxWidth: '100%' },
   // Rounded rather than a pill: long subject names wrap onto two lines.
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    borderRadius: 14,
-    borderCurve: 'continuous',
-    backgroundColor: Colors.backgroundGrouped,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one + 2,
+    gap: space[2],
+    ...shape.tile,
+    backgroundColor: colors.backgroundGrouped,
+    paddingHorizontal: space[4],
+    paddingVertical: space[1.5],
   },
   chipText: { flexShrink: 1 },
-  addChip: { backgroundColor: 'transparent', borderWidth: 1, borderStyle: 'dashed', borderColor: '#c5c9a4' },
-  addText: { fontFamily: Fonts.sansMedium, color: Colors.olive },
+  addChip: { backgroundColor: colors.transparent, borderWidth: 1, borderStyle: 'dashed', borderColor: alpha('meadow', 0.4) },
 });

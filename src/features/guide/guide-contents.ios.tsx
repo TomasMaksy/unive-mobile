@@ -15,7 +15,7 @@ import {
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 
 import { SIZE } from '@/components/icon-button.ios';
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 import type { GuideContentsProps } from '@/features/guide/guide-contents-types';
 
 const glass = isLiquidGlassAvailable();
@@ -42,13 +42,13 @@ export function GuideContents({ sections, currentId, onSelect }: GuideContentsPr
         ]}
         label={
           <HStack spacing={6}>
-            <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(Colors.textMuted)]}>
+            <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(colors.textMuted)]}>
               {`${position}/${sections.length}`}
             </Text>
-            <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(Colors.text), lineLimit(1), frame({ maxWidth: 190 })]}>
+            <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(colors.text), lineLimit(1), frame({ maxWidth: 190 })]}>
               {current?.title ?? ''}
             </Text>
-            <Image systemName="chevron.up.chevron.down" modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(Colors.textSecondary)]} />
+            <Image systemName="chevron.up.chevron.down" modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(colors.textSecondary)]} />
           </HStack>
         }>
         {sections.map((section) => (

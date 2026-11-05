@@ -1,24 +1,21 @@
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
+import { Alert, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/icon-button';
-import { PressableScale } from '@/components/pressable-scale';
-import { Fonts, Shape, Spacing } from '@/constants/theme';
+import { Button, PressableScale, Text } from '@/components/ui';
+import { alpha, colors, duration, easeUnive, haptics, pressScale, riseIn, shape, space } from '@/theme';
 import { siteUrl } from '@/lib/guide';
 import { fetchReferralInvite, type ReferralInvite } from '@/lib/referral';
 
-// The website's invite colours (src/features/referral/referral-invite-modal.tsx
-// in unive-v2): the gift scene melting into a warm brown.
-const BROWN = '#816856';
-const BROWN_CLEAR = 'rgba(129, 104, 86, 0)';
-const TITLE_SIZE = 38;
+// Like the website's invite dialog, the gift scene melts into a warm brown:
+// here the brand's dusk (the website used an off-palette #816856).
+const PAGE = colors.placeholder;
 const SHARE_BAR_SPACE = 120;
 
 const STEPS: { icon: SFSymbol; title: string; description: string }[] = [
@@ -62,7 +59,7 @@ export default function InviteScreen() {
     if (!invite) return;
     try {
       await Clipboard.setStringAsync(invite.inviteUrl);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       setCopied(true);
     } catch (error) {
       Alert.alert("Couldn't copy your link", error instanceof Error ? error.message : 'Please try again.');
@@ -81,15 +78,15 @@ export default function InviteScreen() {
         </View>
 
         <View style={styles.body}>
-          <Animated.View entering={FadeInDown.delay(80).duration(450)} style={styles.titles}>
-            <Text style={styles.title}>Give & get{'\n'}a month of Unive free</Text>
-            <Text style={styles.subtitle}>
-              Share Unive with a friend. When they join, you both get a month free.
+          <Animated.View entering={riseIn(1)} style={styles.titles}>
+            <Text variant="h1" color="textInverse">
+              Give & get{'\n'}a month of Unive free
             </Text>
+            <Text color="onInverseMuted">Share Unive with a friend. When they join, you both get a month free.</Text>
           </Animated.View>
 
           {invite && (invite.timesRedeemed > 0 || invite.pendingRewardMonths > 0) ? (
-            <Animated.View entering={FadeIn} style={styles.stats}>
+            <Animated.View entering={FadeIn.duration(duration.standard).easing(easeUnive)} style={styles.stats}>
               <Stat value={invite.timesRedeemed} label={invite.timesRedeemed === 1 ? 'friend joined' : 'friends joined'} />
               <View style={styles.statDivider} />
               <Stat value={invite.timesRedeemed} label={invite.timesRedeemed === 1 ? 'month earned' : 'months earned'} />
@@ -104,13 +101,17 @@ export default function InviteScreen() {
 
           <View style={styles.steps}>
             {STEPS.map((step, index) => (
-              <Animated.View key={step.title} entering={FadeInDown.delay(160 + index * 70).duration(400)} style={styles.step}>
+              <Animated.View key={step.title} entering={riseIn(2 + index)} style={styles.step}>
                 <View style={styles.stepIcon}>
-                  <SymbolView name={step.icon} size={18} tintColor="#ffffff" style={styles.icon} />
+                  <SymbolView name={step.icon} size={18} tintColor={colors.textInverse} style={styles.icon} />
                 </View>
                 <View style={styles.stepText}>
-                  <Text style={styles.stepTitle}>{step.title}</Text>
-                  <Text style={styles.stepDescription}>{step.description}</Text>
+                  <Text variant="headline" color="textInverse">
+                    {step.title}
+                  </Text>
+                  <Text variant="small" color="onInverseMuted">
+                    {step.description}
+                  </Text>
                 </View>
               </Animated.View>
             ))}
@@ -118,39 +119,44 @@ export default function InviteScreen() {
 
           {/* Your link: tap to copy it. */}
           <PressableScale
-            pressedScale={0.98}
+            pressedScale={pressScale.card}
             onPress={() => void copy()}
             accessibilityRole="button"
             accessibilityLabel="Copy your invite link"
             style={styles.link}>
-            <Text style={styles.linkText} numberOfLines={1}>
+            <Text variant="callout" color="textInverse" numberOfLines={1} style={styles.linkText}>
               {invite ? invite.inviteUrl.replace(/^https?:\/\//, '') : 'Loading your link…'}
             </Text>
             {copied ? (
-              <Animated.View key="copied" entering={FadeIn.duration(150)} exiting={FadeOut.duration(150)} style={styles.linkAction}>
-                <SymbolView name="checkmark" size={14} tintColor="#ffffff" style={styles.smallIcon} />
-                <Text style={styles.linkActionText}>Copied</Text>
+              <Animated.View key="copied" entering={FadeIn.duration(duration.quick)} exiting={FadeOut.duration(duration.quick)} style={styles.linkAction}>
+                <SymbolView name="checkmark" size={14} tintColor={colors.textInverse} style={styles.smallIcon} />
+                <Text variant="label" color="textInverse">
+                  Copied
+                </Text>
               </Animated.View>
             ) : (
-              <Animated.View key="copy" entering={FadeIn.duration(150)} exiting={FadeOut.duration(150)} style={styles.linkAction}>
-                <SymbolView name="doc.on.doc" size={14} tintColor="#ffffff" style={styles.smallIcon} />
-                <Text style={styles.linkActionText}>Copy</Text>
+              <Animated.View key="copy" entering={FadeIn.duration(duration.quick)} exiting={FadeOut.duration(duration.quick)} style={styles.linkAction}>
+                <SymbolView name="doc.on.doc" size={14} tintColor={colors.textInverse} style={styles.smallIcon} />
+                <Text variant="label" color="textInverse">
+                  Copy
+                </Text>
               </Animated.View>
             )}
           </PressableScale>
-          {invite ? <Text style={styles.code}>Or share your code: {invite.referralCode}</Text> : null}
+          {invite ? (
+            <Text variant="caption" color="onInverseMuted" align="center" style={styles.code}>
+              Or share your code: {invite.referralCode}
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
 
-      <View style={[styles.close, { top: insets.top + Spacing.two }]}>
+      <View style={[styles.close, { top: insets.top + space[2] }]}>
         <IconButton systemImage="xmark" accessibilityLabel="Close" onPress={() => router.back()} />
       </View>
 
-      <Animated.View entering={FadeInDown.delay(250).springify().damping(16)} style={[styles.shareBar, { bottom: insets.bottom + Spacing.two }]}>
-        <PressableScale haptic pressedScale={0.96} onPress={() => void share()} accessibilityRole="button" style={styles.share}>
-          <SymbolView name="square.and.arrow.up" size={18} tintColor={BROWN} style={styles.icon} />
-          <Text style={styles.shareLabel}>Share invite link</Text>
-        </PressableScale>
+      <Animated.View entering={riseIn(4)} style={[styles.shareBar, { bottom: insets.bottom + space[2] }]}>
+        <Button label="Share invite link" variant="inverse" size="lg" icon="square.and.arrow.up" onPress={() => void share()} />
       </Animated.View>
     </View>
   );
@@ -159,18 +165,20 @@ export default function InviteScreen() {
 function Stat({ value, label }: { value: number; label: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text variant="h3" color="textInverse">
+        {value}
+      </Text>
+      <Text variant="caption" color="onInverseMuted">
+        {label}
+      </Text>
     </View>
   );
 }
 
-const WHITE_SOFT = 'rgba(255, 255, 255, 0.78)';
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: BROWN,
+    backgroundColor: PAGE,
   },
   heroFade: {
     position: 'absolute',
@@ -178,73 +186,48 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: '55%',
-    experimental_backgroundImage: `linear-gradient(0deg, ${BROWN}, ${BROWN_CLEAR})`,
+    experimental_backgroundImage: `linear-gradient(0deg, ${PAGE}, ${alpha('dusk', 0)})`,
   },
   body: {
-    marginTop: -Spacing.six,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    marginTop: -space[16],
+    paddingHorizontal: space[6],
+    gap: space[6],
   },
   titles: {
-    gap: Spacing.two,
-  },
-  title: {
-    fontFamily: Fonts.heading,
-    fontSize: TITLE_SIZE,
-    lineHeight: TITLE_SIZE * 1.1,
-    // The heading font's tight tracking, like the website's (-0.03em).
-    letterSpacing: TITLE_SIZE * -0.03,
-    color: '#ffffff',
-  },
-  subtitle: {
-    fontFamily: Fonts.sans,
-    fontSize: 17,
-    lineHeight: 24,
-    color: WHITE_SOFT,
+    gap: space[2],
   },
   stats: {
-    ...Shape.card,
+    ...shape.card,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.three,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingVertical: space[4],
+    backgroundColor: alpha('white', 0.12),
   },
   stat: {
     flex: 1,
     alignItems: 'center',
-    gap: Spacing.half,
-  },
-  statValue: {
-    fontFamily: Fonts.heading,
-    fontSize: 28,
-    color: '#ffffff',
-  },
-  statLabel: {
-    fontFamily: Fonts.sans,
-    fontSize: 13,
-    color: WHITE_SOFT,
+    gap: space[0.5],
   },
   statDivider: {
     width: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: colors.onInverseFillStrong,
   },
   steps: {
-    gap: Spacing.three,
+    gap: space[4],
   },
   step: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: space[4],
   },
   stepIcon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
-    borderCurve: 'continuous',
+    ...shape.tile,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    backgroundColor: colors.onInverseFill,
   },
   icon: {
     width: 20,
@@ -252,82 +235,47 @@ const styles = StyleSheet.create({
   },
   stepText: {
     flex: 1,
-    gap: Spacing.half,
-  },
-  stepTitle: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 16,
-    color: '#ffffff',
-  },
-  stepDescription: {
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-    lineHeight: 19,
-    color: WHITE_SOFT,
+    gap: space[0.5],
   },
   link: {
-    ...Shape.pill,
+    ...shape.pill,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    paddingLeft: Spacing.four,
-    paddingRight: Spacing.two,
-    paddingVertical: Spacing.two,
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    gap: space[2],
+    paddingLeft: space[6],
+    paddingRight: space[2],
+    paddingVertical: space[2],
+    backgroundColor: alpha('ink', 0.18),
   },
   linkText: {
     flex: 1,
-    fontFamily: Fonts.sans,
-    fontSize: 15,
-    color: '#ffffff',
   },
   linkAction: {
-    ...Shape.pill,
+    ...shape.pill,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    gap: space[1],
+    paddingHorizontal: space[4],
+    paddingVertical: space[2],
+    backgroundColor: colors.onInverseFill,
   },
   smallIcon: {
     width: 15,
     height: 15,
   },
-  linkActionText: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 14,
-    color: '#ffffff',
-  },
   code: {
-    marginTop: -Spacing.two,
-    textAlign: 'center',
-    fontFamily: Fonts.sans,
-    fontSize: 13,
-    color: WHITE_SOFT,
+    marginTop: -space[2],
   },
   close: {
     position: 'absolute',
-    left: Spacing.four,
+    left: space[6],
   },
+  // The shadow sits on the bar, shaped like the button inside it.
   shareBar: {
+    ...shape.pill,
     position: 'absolute',
-    left: Spacing.three,
-    right: Spacing.three,
-  },
-  share: {
-    ...Shape.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.three + Spacing.half,
-    backgroundColor: '#ffffff',
-    boxShadow: '0 10px 30px rgba(60, 40, 25, 0.35)',
-  },
-  shareLabel: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 17,
-    color: BROWN,
+    left: space[4],
+    right: space[4],
+    boxShadow: `0 10px 30px ${alpha('ink', 0.35)}`,
   },
 });

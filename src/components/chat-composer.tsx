@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { TextField } from '@/components/text-field';
-import { Shape, Spacing } from '@/constants/theme';
+import { Button, Field } from '@/components/ui';
+import { space } from '@/theme';
 
 export type AttachmentSource = 'camera' | 'photos' | 'files';
 
@@ -32,7 +31,7 @@ export function ChatComposer({ busy, onSend, onStop, autoFocus }: ChatComposerPr
 
   return (
     <View style={styles.row}>
-      <TextField ref={inputRef} style={styles.input} placeholder="Ask Unive" multiline value={text} onChangeText={setText} />
+      <Field ref={inputRef} style={styles.input} inputStyle={styles.inputText} placeholder="Ask Unive" multiline value={text} onChangeText={setText} />
       {busy ? (
         <Button label="Stop" variant="secondary" inline onPress={onStop} />
       ) : (
@@ -54,11 +53,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: Spacing.two,
+    gap: space[2],
   },
-  input: {
-    ...Shape.bubble,
-    flex: 1,
-    maxHeight: 140,
-  },
+  input: { flex: 1 },
+  inputText: { minHeight: 44, maxHeight: 140 },
 });

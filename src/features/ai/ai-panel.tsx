@@ -1,7 +1,6 @@
-import * as Haptics from 'expo-haptics';
 import { SymbolView } from 'expo-symbols';
 import { createContext, use, useState, type ReactNode } from 'react';
-import { Keyboard, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -18,7 +17,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
-import { Colors, Fonts } from '@/constants/theme';
+import { Text } from '@/components/ui';
+import { alpha, colors, haptics, space } from '@/theme';
 import { AiChat } from '@/features/ai/ai-chat';
 
 /** How far past the top you pull before letting go opens the AI. */
@@ -89,7 +89,7 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
   useAnimatedReaction(
     () => !engaged.get() && pull.get() >= OPEN_THRESHOLD,
     (armed, wasArmed) => {
-      if (armed && !wasArmed) scheduleOnRN(Haptics.impactAsync, Haptics.ImpactFeedbackStyle.Medium);
+      if (armed && !wasArmed) scheduleOnRN(haptics.thud);
     },
   );
 
@@ -97,7 +97,7 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
   useAnimatedReaction(
     () => dragging.get() && dragY.get() <= -CLOSE_THRESHOLD,
     (armed, wasArmed) => {
-      if (armed && !wasArmed) scheduleOnRN(Haptics.impactAsync, Haptics.ImpactFeedbackStyle.Medium);
+      if (armed && !wasArmed) scheduleOnRN(haptics.thud);
     },
   );
 
@@ -174,9 +174,9 @@ export function AiPanelProvider({ children }: { children: ReactNode }) {
         {children}
 
         <Animated.View pointerEvents="none" style={[styles.gradient, gradientStyle]} />
-        <Animated.View pointerEvents="none" style={[styles.hint, { top: insets.top + 6 }, hintStyle]}>
-          <SymbolView name="sparkles" size={15} tintColor={Colors.olive} />
-          <Text style={styles.hintText}>Swipe to ask AI</Text>
+        <Animated.View pointerEvents="none" style={[styles.hint, { top: insets.top + space[1.5] }, hintStyle]}>
+          <SymbolView name="sparkles" size={15} tintColor={colors.accent} />
+          <Text variant="label">Swipe to ask AI</Text>
         </Animated.View>
 
         <Animated.View style={[styles.panel, panelStyle]} pointerEvents={isOpen ? 'auto' : 'none'}>
@@ -246,23 +246,18 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    // Unive's olive green (Colors.olive, the landing page's forest greens) at the notch, fading to nothing.
-    experimental_backgroundImage: 'linear-gradient(180deg, rgba(111, 118, 68, 0.4), rgba(111, 118, 68, 0))',
+    // Meadow (colors.accent) at the notch, fading to nothing.
+    experimental_backgroundImage: `linear-gradient(180deg, ${alpha('meadow', 0.4)}, ${alpha('meadow', 0)})`,
   },
   hint: {
     position: 'absolute',
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  hintText: {
-    fontFamily: Fonts.sansMedium,
-    fontSize: 14,
-    color: Colors.text,
+    gap: space[1.5],
   },
   panel: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
 });

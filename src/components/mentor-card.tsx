@@ -1,15 +1,13 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { Button, PressableScale, Text } from '@/components/ui';
+import { colors, pressScale, riseIn, shadow, shape, space } from '@/theme';
 import { type Mentor, mentorImageUrl, mentorSlug } from '@/lib/mentors';
 
 const PHOTO_SIZE = 60;
-const NAME_SIZE = 20;
 
 type MentorCardProps = {
   mentor: Mentor;
@@ -25,26 +23,24 @@ type MentorCardProps = {
  */
 export function MentorCard({ mentor, price, index, onBook }: MentorCardProps) {
   return (
-    <Animated.View entering={FadeInDown.delay(50 * index).duration(380)}>
+    <Animated.View entering={riseIn(index)}>
       <Link href={{ pathname: '/mentors/[mentor]', params: { mentor: mentorSlug(mentor) } }} asChild>
         <Link.Trigger withAppleZoom>
-          <PressableScale pressedScale={0.97} accessibilityRole="button" accessibilityLabel={mentor.name} style={styles.card}>
+          <PressableScale pressedScale={pressScale.card} accessibilityRole="button" accessibilityLabel={mentor.name} style={styles.card}>
             <Image source={{ uri: mentorImageUrl(mentor) }} style={styles.photo} transition={200} />
             <View style={styles.text}>
-              <ThemedText style={styles.name} numberOfLines={1}>
+              <Text variant="title" numberOfLines={1}>
                 {mentor.name}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+              </Text>
+              <Text variant="small" color="textSecondary" numberOfLines={1}>
                 {mentor.university}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textMuted" numberOfLines={1} style={styles.meta}>
+              </Text>
+              <Text variant="caption" color="textMuted" numberOfLines={1} style={styles.meta}>
                 ${price} / session
-              </ThemedText>
+              </Text>
             </View>
             {/* Its own press target inside the card (the card opens the mentor's page). */}
-            <PressableScale haptic pressedScale={0.92} onPress={onBook} accessibilityRole="button" accessibilityLabel={`Book a session with ${mentor.name}`} style={styles.book}>
-              <ThemedText style={styles.bookLabel}>Book</ThemedText>
-            </PressableScale>
+            <Button label="Book" variant="accent" size="sm" inline onPress={onBook} style={styles.book} />
           </PressableScale>
         </Link.Trigger>
       </Link>
@@ -54,44 +50,27 @@ export function MentorCard({ mentor, price, index, onBook }: MentorCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    ...Shape.card,
+    ...shape.card,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    backgroundColor: Colors.backgroundElement,
+    gap: space[4],
+    padding: space[4],
+    backgroundColor: colors.surface,
+    boxShadow: shadow.card,
   },
   photo: {
     width: PHOTO_SIZE,
     height: PHOTO_SIZE,
     borderRadius: PHOTO_SIZE / 2,
-    backgroundColor: Colors.backgroundSelected,
+    backgroundColor: colors.fill,
   },
   text: {
     flex: 1,
   },
-  name: {
-    fontFamily: Fonts.heading,
-    fontSize: NAME_SIZE,
-    lineHeight: NAME_SIZE * 1.25,
-    // The heading font's tight tracking, like the website's (-0.03em).
-    letterSpacing: NAME_SIZE * -0.03,
-  },
   meta: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: Spacing.half,
+    marginTop: space[0.5],
   },
   book: {
-    ...Shape.pill,
-    backgroundColor: Colors.olive,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  bookLabel: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 15,
-    lineHeight: 20,
-    color: '#ffffff',
+    alignSelf: 'center',
   },
 });

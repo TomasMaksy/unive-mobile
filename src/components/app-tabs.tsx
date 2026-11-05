@@ -1,16 +1,16 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 
 // AI isn't a tab: pull down from the top of any tab to open it (features/ai/ai-panel.tsx).
 export default function AppTabs() {
   return (
     <NativeTabs
-      tintColor={Colors.text}
-      backgroundColor={Colors.background}
+      tintColor={colors.text}
+      backgroundColor={colors.background}
       // Labels keep the system font: iOS 26's glass tab bar sizes them for it, and
       // a taller custom font (Inter) left unselected labels low and clipped.
-      indicatorColor={Colors.backgroundSelected}>
+      indicatorColor={colors.fill}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />

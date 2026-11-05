@@ -31,7 +31,7 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useEffect, useRef, useState } from 'react';
 
 import type { ChatComposerProps } from '@/components/chat-composer';
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 
 const CORNER_RADIUS = 26;
 // Liquid Glass needs iOS 26; older iOS gets a plain white surface instead.
@@ -67,7 +67,7 @@ export function ChatComposer({ busy, onSend, onStop, onAttach, autoFocus }: Chat
       label={
         <Image
           systemName="plus"
-          modifiers={[font({ size: 20, weight: 'medium' }), foregroundStyle(Colors.text), frame({ width: 36, height: 36 })]}
+          modifiers={[font({ size: 20, weight: 'medium' }), foregroundStyle(colors.text), frame({ width: 36, height: 36 })]}
         />
       }>
       <Button label="Camera" systemImage="camera" onPress={() => onAttach('camera')} />
@@ -82,7 +82,7 @@ export function ChatComposer({ busy, onSend, onStop, onAttach, autoFocus }: Chat
       modifiers={[
         buttonStyle('borderedProminent'),
         buttonBorderShape('circle'),
-        tint(Colors.text),
+        tint(colors.text),
         disabled(!busy && !canSend),
       ]}>
       <Image
@@ -99,7 +99,7 @@ export function ChatComposer({ busy, onSend, onStop, onAttach, autoFocus }: Chat
         cornerRadius: CORNER_RADIUS,
       })
     : background(
-        Colors.backgroundElement,
+        colors.surface,
         focused
           ? shapes.roundedRectangle({ cornerRadius: CORNER_RADIUS, roundedCornerStyle: 'continuous' })
           : shapes.capsule(),

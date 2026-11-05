@@ -2,15 +2,14 @@ import { Image } from 'expo-image';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/icon-button';
 import { PageTitle } from '@/components/page-title';
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { Loading, PressableScale, Text } from '@/components/ui';
+import { alpha, colors, duration, easeUnive, pressScale, riseIn, shape, space } from '@/theme';
 import { bookMentor, fetchMentors, findMentor, loadedMentors, type Mentors, mentorImageUrl } from '@/lib/mentors';
 
 const BOOK_BAR_SPACE = 104;
@@ -47,59 +46,61 @@ export default function MentorScreen() {
         <View pointerEvents="none" style={[styles.photoFade, { top: width - 120 }]} />
 
         {mentor && mentors ? (
-          <Animated.View entering={FadeIn.duration(300)} style={styles.body}>
+          <Animated.View entering={FadeIn.duration(duration.standard).easing(easeUnive)} style={styles.body}>
             <View style={styles.titles}>
               <PageTitle>{mentor.name}</PageTitle>
-              <ThemedText themeColor="textSecondary" style={styles.school}>
-                {mentor.university}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textMuted">
+              <Text color="textSecondary">{mentor.university}</Text>
+              <Text variant="small" color="textMuted">
                 {mentor.major}
-              </ThemedText>
+              </Text>
             </View>
 
             {mentor.why ? (
-              <Animated.View entering={FadeInDown.delay(80)} style={styles.why}>
-                <SymbolView name="sparkles" size={15} tintColor={Colors.olive} style={styles.whyIcon} />
-                <ThemedText type="small" style={styles.whyText}>
+              <Animated.View entering={riseIn(1)} style={styles.why}>
+                <SymbolView name="sparkles" size={15} tintColor={colors.accent} style={styles.whyIcon} />
+                <Text variant="small" style={styles.whyText}>
                   {mentor.why}
-                </ThemedText>
+                </Text>
               </Animated.View>
             ) : null}
 
-            <ThemedText style={styles.bio}>{mentor.description}</ThemedText>
+            <Text>{mentor.description}</Text>
 
             <View style={styles.guarantee}>
-              <SymbolView name="checkmark.seal.fill" size={15} tintColor={Colors.olive} style={styles.whyIcon} />
-              <ThemedText type="small" themeColor="textSecondary">
+              <SymbolView name="checkmark.seal.fill" size={15} tintColor={colors.accent} style={styles.whyIcon} />
+              <Text variant="small" color="textSecondary">
                 60-minute video call. Not helpful? Full refund.
-              </ThemedText>
+              </Text>
             </View>
           </Animated.View>
         ) : (
-          <ActivityIndicator style={styles.loading} color={Colors.textSecondary} />
+          <Loading fill={false} style={styles.loading} />
         )}
       </ScrollView>
 
-      <View style={[styles.close, { top: insets.top + Spacing.two }]}>
+      <View style={[styles.close, { top: insets.top + space[2] }]}>
         <IconButton systemImage="xmark" accessibilityLabel="Close" onPress={() => router.back()} />
       </View>
 
       {mentor && mentors ? (
-        <Animated.View entering={FadeInDown.springify().damping(16)} style={[styles.bookBar, { bottom: insets.bottom + Spacing.two }]}>
+        <Animated.View entering={riseIn(2)} style={[styles.bookBar, { bottom: insets.bottom + space[2] }]}>
           <PressableScale
             haptic
-            pressedScale={0.96}
+            pressedScale={pressScale.button}
             onPress={() => void bookMentor(mentor, mentors.prefill)}
             accessibilityRole="button"
             style={styles.book}>
-            <ThemedText style={styles.bookLabel}>Book a session</ThemedText>
-            <ThemedText style={styles.bookPrice}>
+            <Text variant="headline" color="textInverse">
+              Book a session
+            </Text>
+            <Text variant="headline" color="textInverse">
               {mentors.price < mentors.regularPrice ? (
-                <ThemedText style={[styles.bookPrice, styles.strike]}>${mentors.regularPrice} </ThemedText>
+                <Text variant="headline" color="onInverseMuted" style={styles.strike}>
+                  ${mentors.regularPrice}{' '}
+                </Text>
               ) : null}
               ${mentors.price}
-            </ThemedText>
+            </Text>
           </PressableScale>
         </Animated.View>
       ) : null}
@@ -110,11 +111,11 @@ export default function MentorScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   photo: {
     width: '100%',
-    backgroundColor: Colors.backgroundSelected,
+    backgroundColor: colors.fill,
   },
   // The photo melts into the page instead of ending on a hard edge.
   photoFade: {
@@ -122,26 +123,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 120,
-    experimental_backgroundImage: `linear-gradient(0deg, ${Colors.background}, rgba(249, 249, 247, 0))`,
+    experimental_backgroundImage: `linear-gradient(0deg, ${colors.background}, ${alpha('paper', 0)})`,
   },
   body: {
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-    marginTop: -Spacing.four,
+    paddingHorizontal: space[6],
+    gap: space[6],
+    marginTop: -space[6],
   },
   titles: {
-    gap: Spacing.one,
-  },
-  school: {
-    fontSize: 17,
+    gap: space[1],
   },
   why: {
     flexDirection: 'row',
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: 18,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(111, 118, 68, 0.09)',
+    gap: space[2],
+    padding: space[4],
+    ...shape.bubble,
+    backgroundColor: alpha('meadow', 0.09),
   },
   whyIcon: {
     width: 16,
@@ -149,52 +146,35 @@ const styles = StyleSheet.create({
   },
   whyText: {
     flex: 1,
-    color: Colors.text,
-  },
-  bio: {
-    fontSize: 17,
-    lineHeight: 27,
   },
   guarantee: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: space[2],
   },
   loading: {
-    paddingTop: Spacing.five,
+    paddingTop: space[8],
   },
   close: {
     position: 'absolute',
-    left: Spacing.four,
+    left: space[6],
   },
   bookBar: {
     position: 'absolute',
-    left: Spacing.three,
-    right: Spacing.three,
+    left: space[4],
+    right: space[4],
   },
   book: {
-    ...Shape.pill,
+    ...shape.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-    backgroundColor: Colors.olive,
-    boxShadow: '0 8px 24px rgba(111, 118, 68, 0.35)',
-  },
-  bookLabel: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 17,
-    color: '#ffffff',
-  },
-  bookPrice: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 17,
-    color: '#ffffff',
+    paddingHorizontal: space[6],
+    paddingVertical: space[4],
+    backgroundColor: colors.accent,
+    boxShadow: `0 8px 24px ${alpha('meadow', 0.35)}`,
   },
   strike: {
-    color: 'rgba(255, 255, 255, 0.6)',
     textDecorationLine: 'line-through',
-    fontFamily: Fonts.sans,
   },
 });

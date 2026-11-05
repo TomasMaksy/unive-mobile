@@ -1,8 +1,12 @@
 import { MarkdownStream, type MarkdownStyleMap } from '@ronradtke/react-native-markdown-display';
 import * as WebBrowser from 'expo-web-browser';
+// A plain Text on purpose: the renderer nests these (bold inside a heading, a
+// link inside a list item) and each one must inherit its parent's type, which
+// <Text variant> would reset to body. The type itself comes from the styles below.
+// eslint-disable-next-line no-restricted-imports -- Markdown's nested text inherits its parent's type
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { colors, fonts, shape, space, type } from '@/theme';
 import { API_URL } from '@/lib/auth-client';
 
 type MarkdownTextProps = {
@@ -18,7 +22,7 @@ export function MarkdownText({ children, streaming = false }: MarkdownTextProps)
       streaming={streaming}
       style={styles}
       textcomponent={SelectableText}
-      cursorColor={Colors.textMuted}
+      cursorColor={colors.textMuted}
       onLinkPress={openLink}>
       {children}
     </MarkdownStream>
@@ -36,122 +40,123 @@ function openLink(url: string) {
   return false;
 }
 
-const MONO = 'Menlo';
+// Code is set in a monospace face, the one font outside the brand's two.
+// eslint-disable-next-line no-restricted-syntax -- monospace for code
+const mono = { fontFamily: 'Menlo' };
+
+// Bold inside running text changes the weight only; the size comes from the line it's in.
+// Each Inter weight is its own font, so it's a family, not a fontWeight (which would
+// fall back to the system font). Medium, like the brand's emphasis.
+// eslint-disable-next-line no-restricted-syntax -- weight only, size inherited from the surrounding text
+const medium = { fontFamily: fonts.sansMedium };
 
 const styles = StyleSheet.create({
   body: {
-    color: Colors.text,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
-    lineHeight: 24,
+    ...type.body,
+    color: colors.textSecondary,
   },
   paragraph: {
     marginTop: 0,
-    marginBottom: Spacing.two,
+    marginBottom: space[2],
   },
-  // Each Inter weight is its own font; a fontWeight on top would fall back to the system font.
   strong: {
-    fontFamily: Fonts.sansSemiBold,
+    ...medium,
     fontWeight: 'normal',
+    color: colors.text,
   },
   em: {
     fontStyle: 'italic',
   },
   heading1: {
-    fontFamily: Fonts.heading,
-    fontSize: 24,
-    lineHeight: 30,
-    marginTop: Spacing.two,
-    marginBottom: Spacing.one,
+    ...type.title,
+    color: colors.text,
+    marginTop: space[2],
+    marginBottom: space[1],
   },
   heading2: {
-    fontFamily: Fonts.heading,
-    fontSize: 20,
-    lineHeight: 26,
-    marginTop: Spacing.two,
-    marginBottom: Spacing.one,
+    ...type.lead,
+    color: colors.text,
+    marginTop: space[2],
+    marginBottom: space[1],
   },
   heading3: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 17,
-    lineHeight: 24,
-    marginTop: Spacing.two,
+    ...type.headline,
+    color: colors.text,
+    marginTop: space[2],
   },
   link: {
-    color: Colors.brandBlue,
+    color: colors.accent,
     textDecorationLine: 'underline',
   },
   bullet_list: {
-    marginBottom: Spacing.two,
+    marginBottom: space[2],
   },
   ordered_list: {
-    marginBottom: Spacing.two,
+    marginBottom: space[2],
   },
   list_item: {
-    marginBottom: Spacing.one,
+    marginBottom: space[1],
   },
   code_inline: {
-    fontFamily: MONO,
-    fontSize: 14,
-    backgroundColor: Colors.backgroundSelected,
+    ...type.small,
+    ...mono,
+    backgroundColor: colors.fill,
   },
   fence: {
-    ...Shape.card,
-    fontFamily: MONO,
-    fontSize: 14,
-    padding: Spacing.three,
-    backgroundColor: Colors.backgroundElement,
-    borderColor: Colors.border,
+    ...shape.card,
+    ...type.small,
+    ...mono,
+    padding: space[4],
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
-    marginBottom: Spacing.two,
+    marginBottom: space[2],
   },
   code_block: {
-    ...Shape.card,
-    fontFamily: MONO,
-    fontSize: 14,
-    padding: Spacing.three,
-    backgroundColor: Colors.backgroundElement,
-    borderColor: Colors.border,
+    ...shape.card,
+    ...type.small,
+    ...mono,
+    padding: space[4],
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
   },
   blockquote: {
-    backgroundColor: 'transparent',
-    borderLeftColor: Colors.border,
+    backgroundColor: colors.transparent,
+    borderLeftColor: colors.border,
     borderLeftWidth: 3,
-    paddingLeft: Spacing.three,
+    paddingLeft: space[4],
     marginLeft: 0,
   },
   hr: {
-    backgroundColor: Colors.border,
-    marginVertical: Spacing.three,
+    backgroundColor: colors.border,
+    marginVertical: space[4],
   },
   // Tables: a white squircle card with hairline rows, like the website's.
   table: {
-    ...Shape.card,
+    ...shape.card,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.backgroundElement,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     overflow: 'hidden',
-    marginBottom: Spacing.three,
+    marginBottom: space[4],
   },
   thead: {
-    backgroundColor: Colors.backgroundSelected,
+    backgroundColor: colors.fill,
   },
   tr: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   // Smaller text and tighter cells, so words in narrow columns don't break mid-word.
   th: {
+    ...type.small,
     paddingHorizontal: 10,
-    paddingVertical: Spacing.two,
-    fontSize: 14,
-    lineHeight: 20,
+    paddingVertical: space[2],
   },
   td: {
+    ...type.small,
     paddingHorizontal: 10,
-    paddingVertical: Spacing.two,
-    fontSize: 14,
-    lineHeight: 20,
+    paddingVertical: space[2],
   },
 }) as MarkdownStyleMap;

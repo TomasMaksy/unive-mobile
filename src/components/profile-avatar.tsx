@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Colors, Fonts, Shape } from '@/constants/theme';
+import { Loader, Text } from '@/components/ui';
+import { colors, shape } from '@/theme';
 import { profileImageCacheKey } from '@/lib/profile-image';
 
 type ProfileAvatarProps = {
@@ -26,11 +27,15 @@ export function ProfileAvatar({ size, imageUrl, name, busy }: ProfileAvatarProps
           transition={150}
         />
       ) : (
-        <Text style={[styles.initial, { fontSize: size * 0.4 }]}>{initial}</Text>
+        // The initial scales with the circle, so its size can't be a step of the type scale.
+        // eslint-disable-next-line no-restricted-syntax
+        <Text variant="headline" style={{ fontSize: size * 0.4, lineHeight: size * 0.5 }}>
+          {initial}
+        </Text>
       )}
       {busy && (
         <View style={[StyleSheet.absoluteFill, styles.busy]}>
-          <ActivityIndicator color="#ffffff" />
+          <Loader size={Math.round(size * 0.22)} color={colors.textInverse} accessibilityLabel="Uploading" />
         </View>
       )}
     </View>
@@ -39,19 +44,15 @@ export function ProfileAvatar({ size, imageUrl, name, busy }: ProfileAvatarProps
 
 const styles = StyleSheet.create({
   circle: {
-    ...Shape.pill,
+    ...shape.pill,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.backgroundSelected,
-  },
-  initial: {
-    fontFamily: Fonts.sansSemiBold,
-    color: Colors.text,
+    backgroundColor: colors.fill,
   },
   busy: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: colors.scrim,
   },
 });

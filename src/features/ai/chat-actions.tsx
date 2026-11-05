@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { IconButton } from '@/components/icon-button';
-import { Spacing } from '@/constants/theme';
+import { space } from '@/theme';
 import type { ChatSummary } from '@/lib/chat-history';
 
 export type ChatActionsProps = {
@@ -33,6 +33,6 @@ export function ChatActions({ canStartNew, onNewChat }: ChatActionsProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: Spacing.two,
+    gap: space[2],
   },
 });

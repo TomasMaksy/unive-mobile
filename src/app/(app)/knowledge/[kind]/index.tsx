@@ -6,16 +6,14 @@ import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, {
-  FadeInDown,
   LinearTransition,
   type SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
 
 import { PageTitle } from "@/components/page-title";
-import { PressableScale } from "@/components/pressable-scale";
-import { ThemedText } from "@/components/themed-text";
-import { Colors, Fonts, Shape, Spacing } from "@/constants/theme";
+import { Button, PressableScale, Text } from "@/components/ui";
+import { colors, pressScale, riseIn, shape, space } from "@/theme";
 import { confirmDelete } from "@/features/knowledge/delete";
 import {
   type ItemSummary,
@@ -55,14 +53,14 @@ export default function KnowledgeSectionScreen() {
       >
         <View style={styles.header}>
           <PageTitle>{section.title}</PageTitle>
-          <ThemedText type="small" themeColor="textSecondary">
+          <Text variant="small" color="textSecondary">
             {section.blurb}
-          </ThemedText>
+          </Text>
         </View>
 
         {items.length === 0 ? (
           <Animated.View
-            entering={FadeInDown.duration(380)}
+            entering={riseIn(0)}
             style={[styles.card, styles.empty]}
           >
             <Image
@@ -70,26 +68,23 @@ export default function KnowledgeSectionScreen() {
               style={styles.emptyArt}
               contentFit="contain"
             />
-            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+            <Text color="textSecondary" align="center">
               Nothing here yet. The more Unive knows, the better its advice.
-            </ThemedText>
-            <PressableScale
-              haptic
-              accessibilityRole="button"
+            </Text>
+            <Button
+              label={section.addLabel}
+              variant="accent"
+              inline
+              style={styles.centerSelf}
               onPress={add}
-              style={styles.addButton}
-            >
-              <ThemedText style={styles.addText}>{section.addLabel}</ThemedText>
-            </PressableScale>
+            />
           </Animated.View>
         ) : (
           <View style={styles.list}>
             {items.map((item, index) => (
               <Animated.View
                 key={item.id}
-                entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(
-                  380,
-                )}
+                entering={riseIn(Math.min(index, 8))}
                 layout={LinearTransition}
               >
                 <Row kind={kind} item={item} />
@@ -136,7 +131,7 @@ function Row({ kind, item }: { kind: KnowledgeKind; item: ItemSummary }) {
       >
         <Link.Trigger>
           <PressableScale
-            pressedScale={0.98}
+            pressedScale={pressScale.card}
             accessibilityRole="button"
             style={CARD}
           >
@@ -149,32 +144,28 @@ function Row({ kind, item }: { kind: KnowledgeKind; item: ItemSummary }) {
               />
             )}
             <View style={styles.text}>
-              <ThemedText style={isNote ? styles.note : styles.title}>
+              <Text variant={isNote ? "callout" : "headline"}>
                 {item.title}
-              </ThemedText>
+              </Text>
               {item.subtitle ? (
-                <ThemedText type="small" themeColor="textSecondary">
+                <Text variant="small" color="textSecondary">
                   {item.subtitle}
-                </ThemedText>
+                </Text>
               ) : null}
               {item.detail ? (
-                <ThemedText
-                  type="small"
-                  themeColor="textMuted"
-                  style={styles.detail}
-                >
+                <Text variant="caption" color="textMuted">
                   {item.detail}
-                </ThemedText>
+                </Text>
               ) : null}
               {item.body ? (
-                <ThemedText
-                  type="small"
-                  themeColor="textSecondary"
+                <Text
+                  variant="small"
+                  color="textSecondary"
                   numberOfLines={2}
                   style={styles.body}
                 >
                   {item.body}
-                </ThemedText>
+                </Text>
               ) : null}
             </View>
           </PressableScale>
@@ -222,7 +213,9 @@ function DeleteAction({
         onPress={onPress}
         style={styles.delete}
       >
-        <ThemedText style={styles.deleteText}>Delete</ThemedText>
+        <Text variant="label" color="textInverse">
+          Delete
+        </Text>
       </Pressable>
     </Animated.View>
   );
@@ -230,47 +223,36 @@ function DeleteAction({
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
+    paddingHorizontal: space[4],
+    paddingBottom: space[16],
+    gap: space[6],
   },
-  header: { paddingHorizontal: Spacing.one, gap: Spacing.one },
-  list: { gap: Spacing.two + Spacing.one },
+  header: { paddingHorizontal: space[1], gap: space[1] },
+  list: { gap: space[3] },
   card: {
-    ...Shape.card,
-    backgroundColor: Colors.backgroundElement,
+    ...shape.card,
+    backgroundColor: colors.surface,
   },
-  swipe: { ...Shape.card, overflow: "hidden" },
+  swipe: { ...shape.card, overflow: "hidden" },
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: Spacing.three,
-    padding: Spacing.three,
+    gap: space[4],
+    padding: space[4],
   },
   icon: { width: ICON_SIZE, height: ICON_SIZE },
-  text: { flex: 1, gap: 2 },
-  title: { fontFamily: Fonts.sansSemiBold, fontSize: 16, lineHeight: 21 },
-  note: { fontSize: 15, lineHeight: 22 },
-  detail: { fontSize: 13, lineHeight: 18 },
-  body: { marginTop: Spacing.one },
+  text: { flex: 1, gap: space[0.5] },
+  body: { marginTop: space[1] },
   delete: {
     flex: 1,
     width: 96,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.destructive,
+    backgroundColor: colors.danger,
   },
-  deleteText: { fontFamily: Fonts.sansSemiBold, fontSize: 15, color: "#fff" },
-  empty: { alignItems: "center", padding: Spacing.four, gap: Spacing.three },
+  empty: { alignItems: "center", padding: space[6], gap: space[4] },
   emptyArt: { width: 96, height: 96 },
-  emptyText: { textAlign: "center" },
-  addButton: {
-    ...Shape.pill,
-    backgroundColor: Colors.olive,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two + 2,
-  },
-  addText: { fontFamily: Fonts.sansSemiBold, fontSize: 15, color: "#fff" },
+  centerSelf: { alignSelf: "center" },
 });
 
 // One style object: Link passes it down, and it can't take a list.

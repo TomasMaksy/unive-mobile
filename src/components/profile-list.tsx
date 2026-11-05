@@ -1,11 +1,11 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { PressableScale } from '@/components/pressable-scale';
+import { Button } from '@/components/ui';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { PROFILE_LINKS, type ProfileScreen } from '@/components/profile-links';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Shape, Spacing } from '@/constants/theme';
+import { Text } from '@/components/ui/text';
+import { colors, shape, space } from '@/theme';
 
 export type ProfileListProps = {
   name: string;
@@ -41,23 +41,23 @@ export function ProfileList({
         <PressableScale accessibilityRole="button" accessibilityLabel="Change profile picture" onPress={onEditPhoto}>
           <ProfileAvatar size={104} imageUrl={imageUrl} name={name || email} busy={uploadingPhoto} />
         </PressableScale>
-        <ThemedText type="subtitle">{name}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
+        <Text variant="h3">{name}</Text>
+        <Text variant="small" color="textSecondary">
           {email}
-        </ThemedText>
+        </Text>
       </View>
       <View style={styles.card}>
         <Pressable style={styles.row} onPress={onInvite}>
-          <ThemedText>Invite friends</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
+          <Text>Invite friends</Text>
+          <Text variant="small" color="textSecondary">
             Earn $150+
-          </ThemedText>
+          </Text>
         </Pressable>
       </View>
       <View style={styles.card}>
         {PROFILE_LINKS.map((link) => (
           <Pressable key={link.screen} style={styles.row} onPress={() => onOpen(link.screen)}>
-            <ThemedText>{link.title}</ThemedText>
+            <Text>{link.title}</Text>
           </Pressable>
         ))}
       </View>
@@ -68,21 +68,21 @@ export function ProfileList({
 
 const styles = StyleSheet.create({
   content: {
-    gap: Spacing.three,
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
+    gap: space[4],
+    padding: space[6],
+    paddingTop: space[8],
   },
   header: {
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: space[1],
   },
   card: {
-    ...Shape.card,
-    backgroundColor: Colors.backgroundElement,
-    paddingHorizontal: Spacing.three,
+    ...shape.card,
+    backgroundColor: colors.surface,
+    paddingHorizontal: space[4],
   },
   row: {
-    paddingVertical: Spacing.three,
+    paddingVertical: space[4],
     gap: 2,
   },
 });

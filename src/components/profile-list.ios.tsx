@@ -14,11 +14,11 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
-import { PressableScale } from '@/components/pressable-scale';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import type { ProfileListProps } from '@/components/profile-list';
 import { PROFILE_LINKS } from '@/components/profile-links';
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 
 const NAME_SIZE = 32;
 
@@ -40,8 +40,8 @@ export function ProfileList({
 
   return (
     <Host style={{ flex: 1 }} colorScheme="light">
-      <List modifiers={[listStyle('insetGrouped'), scrollContentBackground('hidden'), background(Colors.backgroundGrouped)]}>
-        <Section modifiers={[listRowBackground('#00000000')]}>
+      <List modifiers={[listStyle('insetGrouped'), scrollContentBackground('hidden'), background(colors.backgroundGrouped)]}>
+        <Section modifiers={[listRowBackground(colors.transparent)]}>
           <VStack spacing={8} modifiers={[frame({ maxWidth: 10000 }), padding({ top: 36, bottom: 8 })]}>
             {/* Your picture is a React Native view (expo-image loads it), placed in the SwiftUI list. */}
             <RNHostView matchContents>
@@ -57,22 +57,22 @@ export function ProfileList({
             <Text
               modifiers={[
                 font({ family: 'AveriaSerifLibre-Regular', size: NAME_SIZE }),
-                // The heading font's tight tracking, like the website's (-0.03em) and ThemedText's.
+                // The heading font's tight tracking, like the website's (-0.03em) and <Text>'s.
                 kerning(NAME_SIZE * -0.03),
-                foregroundStyle(Colors.text),
+                foregroundStyle(colors.text),
                 multilineTextAlignment('center'),
                 padding({ top: 8 }),
               ]}>
               {name}
             </Text>
-            <Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(Colors.textSecondary), multilineTextAlignment('center')]}>
+            <Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(colors.textSecondary), multilineTextAlignment('center')]}>
               {email}
             </Text>
           </VStack>
         </Section>
 
         <Section>
-          <Row systemImage="gift.fill" title="Invite friends" subtitle="Earn $150+" tint={Colors.olive} onPress={onInvite} />
+          <Row systemImage="gift.fill" title="Invite friends" subtitle="Earn $150+" tint={colors.accent} onPress={onInvite} />
         </Section>
 
         <Section>
@@ -95,7 +95,7 @@ function Row({
   systemImage,
   title,
   subtitle,
-  tint = Colors.text,
+  tint = colors.text,
   onPress,
 }: {
   systemImage: SFSymbol;
@@ -109,13 +109,13 @@ function Row({
       <HStack spacing={14} modifiers={[padding({ vertical: 6 })]}>
         <Image systemName={systemImage} modifiers={[font({ size: 20 }), foregroundStyle(tint), frame({ width: 28 })]} />
         <VStack alignment="leading" spacing={2}>
-          <Text modifiers={[font({ textStyle: 'body' }), foregroundStyle(Colors.text)]}>{title}</Text>
+          <Text modifiers={[font({ textStyle: 'body' }), foregroundStyle(colors.text)]}>{title}</Text>
           {subtitle ? (
-            <Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(Colors.textSecondary)]}>{subtitle}</Text>
+            <Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(colors.textSecondary)]}>{subtitle}</Text>
           ) : null}
         </VStack>
         <Spacer />
-        <Image systemName="chevron.right" modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(Colors.textMuted)]} />
+        <Image systemName="chevron.right" modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(colors.textMuted)]} />
       </HStack>
     </Button>
   );

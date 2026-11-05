@@ -1,27 +1,15 @@
-import { StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import type { StyleProp, TextStyle } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Fonts } from '@/constants/theme';
-
-export const PAGE_TITLE_SIZE = 34;
+import { Text } from '@/components/ui';
 
 /**
  * A page's title, in the content rather than a navigation bar: it scrolls
- * away with the page. Averia with the website's tight tracking.
+ * away with the page (no top bars). The `h2` step of the type scale.
  */
 export function PageTitle({ children, style }: { children: string; style?: StyleProp<TextStyle> }) {
   return (
-    <ThemedText accessibilityRole="header" style={[styles.title, style]}>
+    <Text variant="h2" accessibilityRole="header" style={style}>
       {children}
-    </ThemedText>
+    </Text>
   );
 }
-
-const styles = StyleSheet.create({
-  title: {
-    fontFamily: Fonts.heading,
-    fontSize: PAGE_TITLE_SIZE,
-    lineHeight: PAGE_TITLE_SIZE * 1.15,
-    letterSpacing: PAGE_TITLE_SIZE * -0.03,
-  },
-});

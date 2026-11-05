@@ -1,8 +1,8 @@
 import type { SFSymbol } from 'expo-symbols';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { PressableScale } from '@/components/pressable-scale';
-import { Colors, Shape } from '@/constants/theme';
+import { PressableScale, Text } from '@/components/ui';
+import { colors, shape } from '@/theme';
 
 export type IconButtonProps = {
   /** SF Symbol name, e.g. 'xmark'. */
@@ -18,22 +18,18 @@ export type IconButtonProps = {
 export function IconButton({ accessibilityLabel, onPress }: IconButtonProps) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={styles.button}>
-      <Text style={styles.glyph}>✕</Text>
+      <Text variant="headline">✕</Text>
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    ...Shape.pill,
+    ...shape.pill,
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.backgroundSelected,
-  },
-  glyph: {
-    fontSize: 17,
-    color: Colors.text,
+    backgroundColor: colors.fill,
   },
 });

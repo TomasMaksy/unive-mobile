@@ -36,10 +36,10 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 
 import { NativeTextField } from '@/components/native-text-field';
-import { PressableScale } from '@/components/pressable-scale';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { SETTINGS_COPY, type SettingsFormProps } from '@/components/settings-form-types';
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 import { GENDERS, parseIsoDate, toIsoDate } from '@/lib/settings';
 
 const NO_GENDER = 'none';
@@ -76,24 +76,24 @@ export function SettingsForm({
         modifiers={[
           listStyle('insetGrouped'),
           scrollContentBackground('hidden'),
-          background(Colors.backgroundGrouped),
+          background(colors.backgroundGrouped),
           scrollDismissesKeyboard('interactively'),
-          tint(Colors.olive),
+          tint(colors.accent),
         ]}>
-        {/* The page's title, in the list rather than a navigation bar (it scrolls away). */}
-        <Section modifiers={[listRowBackground('#00000000'), listRowInsets({ leading: 4, trailing: 0, top: 0, bottom: 0 })]}>
+        {/* The page's title, in the list rather than a navigation bar (it scrolls away): the h2 step, Averia Light. */}
+        <Section modifiers={[listRowBackground(colors.transparent), listRowInsets({ leading: 4, trailing: 0, top: 0, bottom: 0 })]}>
           <Text
             modifiers={[
-              font({ family: 'AveriaSerifLibre-Regular', size: TITLE_SIZE }),
+              font({ family: 'AveriaSerifLibre-Light', size: TITLE_SIZE }),
               kerning(TITLE_SIZE * -0.03),
-              foregroundStyle(Colors.text),
+              foregroundStyle(colors.text),
             ]}>
             Settings
           </Text>
         </Section>
 
         {/* Your picture, like editing a contact: tap it (or Edit) to change it. */}
-        <Section modifiers={[listRowBackground('#00000000')]}>
+        <Section modifiers={[listRowBackground(colors.transparent)]}>
           <VStack spacing={10} modifiers={[frame({ maxWidth: 10000 })]}>
             <RNHostView matchContents>
               <PressableScale
@@ -106,7 +106,7 @@ export function SettingsForm({
               </PressableScale>
             </RNHostView>
             <Button onPress={onEditPhoto}>
-              <Text modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' }), foregroundStyle(Colors.olive)]}>
+              <Text modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' }), foregroundStyle(colors.accent)]}>
                 {imageUrl ? 'Edit' : 'Add Photo'}
               </Text>
             </Button>
@@ -165,15 +165,15 @@ export function SettingsForm({
         <Section title="Account">
           <Button onPress={onEditEmail}>
             <HStack spacing={8}>
-              <Text modifiers={[foregroundStyle(Colors.text)]}>Email</Text>
+              <Text modifiers={[foregroundStyle(colors.text)]}>Email</Text>
               <Spacer />
-              <Text modifiers={[foregroundStyle(Colors.textSecondary)]}>{email}</Text>
+              <Text modifiers={[foregroundStyle(colors.textSecondary)]}>{email}</Text>
               <Chevron />
             </HStack>
           </Button>
           {subscribed && (
             <LabeledContent label="Plan">
-              <Text modifiers={[foregroundStyle(Colors.textSecondary)]}>Unive Pro</Text>
+              <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Unive Pro</Text>
             </LabeledContent>
           )}
         </Section>
@@ -185,20 +185,20 @@ export function SettingsForm({
         <Section
           title="Google Calendar"
           footer={
-            <Text modifiers={calendar?.syncError ? [foregroundStyle(Colors.destructive)] : []}>
+            <Text modifiers={calendar?.syncError ? [foregroundStyle(colors.dangerText)] : []}>
               {calendar?.syncError ?? (calendar?.linked ? SETTINGS_COPY.calendarLinked : SETTINGS_COPY.calendarUnlinked)}
             </Text>
           }>
           {calendar === null || calendarBusy ? (
             <HStack>
-              <Text modifiers={[foregroundStyle(Colors.textSecondary)]}>Google Calendar</Text>
+              <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Google Calendar</Text>
               <Spacer />
               <ProgressView />
             </HStack>
           ) : calendar.linked ? (
             <>
               <LabeledContent label="Google Calendar">
-                <Text modifiers={[foregroundStyle(Colors.textSecondary)]}>Linked</Text>
+                <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Linked</Text>
               </LabeledContent>
               <Button role="destructive" label="Unlink Google Calendar" onPress={onUnlinkCalendar} />
             </>
@@ -210,22 +210,22 @@ export function SettingsForm({
         <Section title="Knowledge & onboarding" footer={<Text>{SETTINGS_COPY.knowledgeFooter}</Text>}>
           <Button onPress={onOpenKnowledge}>
             <HStack>
-              <Text modifiers={[foregroundStyle(Colors.text)]}>Knowledge Library</Text>
+              <Text modifiers={[foregroundStyle(colors.text)]}>Knowledge Library</Text>
               <Spacer />
               <Chevron />
             </HStack>
           </Button>
           <HStack>
-            <Text modifiers={[foregroundStyle(Colors.textMuted)]}>Redo onboarding</Text>
+            <Text modifiers={[foregroundStyle(colors.textMuted)]}>Redo onboarding</Text>
             <Spacer />
-            <Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(Colors.textMuted)]}>Coming soon</Text>
+            <Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(colors.textMuted)]}>Coming soon</Text>
           </HStack>
         </Section>
 
         <Section footer={<Text>{SETTINGS_COPY.eraseFooter}</Text>}>
           {erasing ? (
             <HStack>
-              <Text modifiers={[foregroundStyle(Colors.textSecondary)]}>Erasing…</Text>
+              <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Erasing…</Text>
               <Spacer />
               <ProgressView />
             </HStack>
@@ -263,7 +263,7 @@ function Field({
         onTextChange={onChange}
         modifiers={[
           multilineTextAlignment('trailing'),
-          foregroundStyle(Colors.textSecondary),
+          foregroundStyle(colors.textSecondary),
           autocorrectionDisabled(),
           textInputAutocapitalization('words'),
           ...modifiers,
@@ -274,5 +274,5 @@ function Field({
 }
 
 function Chevron() {
-  return <Image systemName="chevron.right" modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(Colors.textMuted)]} />;
+  return <Image systemName="chevron.right" modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(colors.textMuted)]} />;
 }

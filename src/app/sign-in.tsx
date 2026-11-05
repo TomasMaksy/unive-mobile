@@ -1,14 +1,12 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { TextField } from '@/components/text-field';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { Button, Field, Text, Wordmark } from '@/components/ui';
 import { authClient, signOut } from '@/lib/auth-client';
+import { colors, duration, easeUnive, haptics, riseIn, screenPadding, shadow, shape, space } from '@/theme';
 
 const PRIVACY_POLICY_URL = 'https://unive.ai/legal/privacy-policy';
 
@@ -19,7 +17,13 @@ export default function SignInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function fail(message: string) {
+    setError(message);
+    haptics.error();
+  }
+
   async function sendCode() {
+    if (!email.trim() || loading) return;
     setError(null);
     setLoading(true);
     try {
@@ -31,7 +35,7 @@ export default function SignInScreen() {
         email: email.trim().toLowerCase(),
         type: 'sign-in',
       });
-      if (error) return setError(error.message ?? 'Could not send the code.');
+      if (error) return fail(error.message ?? 'Could not send the code.');
       setCode('');
       setStep('code');
     } finally {
@@ -40,6 +44,7 @@ export default function SignInScreen() {
   }
 
   async function verifyCode() {
+    if (code.trim().length < 6 || loading) return;
     setError(null);
     setLoading(true);
     try {
@@ -48,37 +53,39 @@ export default function SignInScreen() {
         otp: code.trim(),
       });
       // On success the session updates and the root layout leaves this screen.
-      if (error) setError(error.message ?? 'That code did not work.');
+      if (error) fail(error.message ?? 'That code did not work.');
+      else haptics.success();
     } finally {
       setLoading(false);
     }
   }
 
+  const stepEnter = FadeIn.duration(duration.standard).easing(easeUnive);
+  const stepExit = FadeOut.duration(duration.quick);
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.container}>
-        <ThemedText type="wordmark" style={styles.wordmark}>
-          Unive
-        </ThemedText>
+    <View style={styles.screen}>
+      <SafeAreaView style={styles.flex}>
+        <Animated.View entering={riseIn(0, 6)} style={styles.wordmark}>
+          <Wordmark height={26} />
+        </Animated.View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.container}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <View style={styles.heading}>
-              <ThemedText type="title" style={styles.center}>
+            <Animated.View entering={riseIn(1)} style={styles.heading}>
+              <Text variant="display" align="center">
                 Sign in to Unive
-              </ThemedText>
-              <ThemedText themeColor="textSecondary" style={[styles.center, styles.lead]}>
+              </Text>
+              <Text variant="lead" color="textSecondary" align="center">
                 Continue where you left off.
-              </ThemedText>
-            </View>
+              </Text>
+            </Animated.View>
 
-            <View style={styles.card}>
+            <Animated.View entering={riseIn(2)} style={styles.panel}>
               {step === 'email' ? (
-                <>
-                  <TextField
-                    key="email"
+                <Animated.View key="email" entering={stepEnter} exiting={stepExit} style={styles.step}>
+                  <Field
+                    size="lg"
                     placeholder="Enter your email"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -87,24 +94,29 @@ export default function SignInScreen() {
                     returnKeyType="go"
                     autoFocus
                     value={email}
-                    onChangeText={setEmail}
+                    error={error}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (error) setError(null);
+                    }}
                     onSubmitEditing={sendCode}
                   />
                   <Button
                     label="Continue with email"
+                    size="lg"
                     loading={loading}
                     disabled={!email.trim()}
                     onPress={sendCode}
                   />
-                </>
+                </Animated.View>
               ) : (
-                <>
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+                <Animated.View key="code" entering={stepEnter} exiting={stepExit} style={styles.step}>
+                  <Text variant="small" color="textSecondary" align="center">
                     Enter the 6-digit code we sent to {email.trim()}.
-                  </ThemedText>
-                  <TextField
-                    key="code"
-                    style={styles.code}
+                  </Text>
+                  <Field
+                    size="lg"
+                    inputStyle={styles.code}
                     placeholder="000000"
                     keyboardType="number-pad"
                     textContentType="oneTimeCode"
@@ -112,95 +124,71 @@ export default function SignInScreen() {
                     autoFocus
                     maxLength={6}
                     value={code}
-                    onChangeText={setCode}
+                    error={error}
+                    onChangeText={(text) => {
+                      setCode(text);
+                      if (error) setError(null);
+                    }}
                     onSubmitEditing={verifyCode}
                   />
-                  <Button label="Sign in" loading={loading} disabled={code.trim().length < 6} onPress={verifyCode} />
-                  <ThemedText
-                    type="link"
-                    themeColor="textSecondary"
-                    style={styles.center}
+                  <Button label="Sign in" size="lg" loading={loading} disabled={code.trim().length < 6} onPress={verifyCode} />
+                  <Button
+                    label="Use a different email"
+                    variant="ghost"
+                    size="sm"
+                    inline
+                    haptic={false}
                     disabled={loading}
+                    style={styles.centerSelf}
                     onPress={() => {
                       setError(null);
                       setStep('email');
-                    }}>
-                    Use a different email
-                  </ThemedText>
-                </>
+                    }}
+                  />
+                </Animated.View>
               )}
 
-              {error && (
-                <ThemedText type="small" themeColor="destructive" style={styles.center}>
-                  {error}
-                </ThemedText>
-              )}
-
-              <ThemedText type="small" themeColor="textSecondary" style={[styles.center, styles.legal]}>
+              <Text variant="caption" color="textMuted" align="center">
                 By continuing, you accept Unive’s{' '}
-                <ThemedText
-                  type="small"
-                  themeColor="textSecondary"
+                <Text
+                  variant="caption"
+                  color="textSecondary"
                   style={styles.underline}
                   onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}>
                   Privacy Policy
-                </ThemedText>
+                </Text>
                 .
-              </ThemedText>
-            </View>
-
+              </Text>
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  wordmark: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-  },
+  screen: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
+  wordmark: { paddingHorizontal: screenPadding, paddingTop: space[2] },
   content: {
     flexGrow: 1,
     justifyContent: 'center',
-    gap: Spacing.four,
-    padding: Spacing.four,
+    gap: space[8],
+    padding: screenPadding,
   },
-  heading: {
-    gap: Spacing.two,
+  heading: { gap: space[3] },
+  panel: {
+    ...shape.panel,
+    gap: space[5],
+    padding: space[5],
+    backgroundColor: colors.surface,
+    boxShadow: shadow.card,
   },
-  center: {
-    textAlign: 'center',
-  },
-  lead: {
-    fontFamily: Fonts.headingLight,
-    fontSize: 17,
-    lineHeight: 26,
-  },
-  card: {
-    gap: Spacing.three,
-    ...Shape.panel,
-    padding: Spacing.four,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.backgroundElement,
-  },
-  code: {
-    fontSize: 24,
-    letterSpacing: 10,
-    textAlign: 'center',
-  },
-  legal: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  underline: {
-    fontSize: 12,
-    lineHeight: 18,
-    textDecorationLine: 'underline',
-  },
+  step: { gap: space[4] },
+  centerSelf: { alignSelf: 'center' },
+  // A one-time code reads best spaced out and centred.
+  // eslint-disable-next-line no-restricted-syntax
+  code: { fontSize: 24, letterSpacing: 10, textAlign: 'center' },
+  underline: { textDecorationLine: 'underline' },
 });

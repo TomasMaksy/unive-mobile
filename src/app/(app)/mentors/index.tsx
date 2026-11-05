@@ -1,12 +1,12 @@
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { MentorCard } from '@/components/mentor-card';
 import { PageTitle } from '@/components/page-title';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing } from '@/constants/theme';
+import { ErrorState, Skeleton, Text } from '@/components/ui';
+import { colors, duration, easeUnive, space } from '@/theme';
 import { bookMentor, fetchMentors, loadedMentors, type Mentors } from '@/lib/mentors';
 
 /** Unive's tutors to book a 1-on-1 with, like the website's Mentors page. Opened from the profile. */
@@ -34,19 +34,19 @@ export default function MentorsScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={reload} />}>
       <View style={styles.header}>
         <PageTitle>Mentors</PageTitle>
-        <ThemedText themeColor="textSecondary">
+        <Text color="textSecondary">
           A 1-on-1 with a tutor from Harvard, MIT, Stanford and more, for your list, essays or a final read.
-        </ThemedText>
+        </Text>
         <View style={styles.guarantee}>
-          <SymbolView name="checkmark.seal.fill" size={15} tintColor={Colors.olive} style={styles.guaranteeIcon} />
-          <ThemedText type="small" themeColor="textSecondary">
+          <SymbolView name="checkmark.seal.fill" size={15} tintColor={colors.accent} style={styles.guaranteeIcon} />
+          <Text variant="small" color="textSecondary">
             Not helpful? Full refund.
-          </ThemedText>
+          </Text>
         </View>
       </View>
 
       {mentors ? (
-        <Animated.View entering={FadeIn} style={styles.sections}>
+        <Animated.View entering={FadeIn.duration(duration.standard).easing(easeUnive)} style={styles.sections}>
           {mentors.recommended.length > 0 && (
             <Section title="Recommended for you">
               {mentors.recommended.map((mentor, index) => (
@@ -73,12 +73,13 @@ export default function MentorsScreen() {
           </Section>
         </Animated.View>
       ) : failed ? (
-        <Pressable onPress={reload} style={styles.status}>
-          <ThemedText themeColor="textSecondary">Couldn’t load the mentors.</ThemedText>
-          <ThemedText themeColor="olive">Try again</ThemedText>
-        </Pressable>
+        <ErrorState message="Couldn’t load the mentors." onRetry={reload} fill={false} />
       ) : (
-        <ActivityIndicator style={styles.status} color={Colors.textSecondary} />
+        <View style={styles.section}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} shape="block" height={92} />
+          ))}
+        </View>
       )}
     </ScrollView>
   );
@@ -88,9 +89,9 @@ function Section({ title, children }: { title?: string; children: React.ReactNod
   return (
     <View style={styles.section}>
       {title ? (
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+        <Text variant="label" color="textSecondary" style={styles.sectionTitle}>
           {title}
-        </ThemedText>
+        </Text>
       ) : null}
       {children}
     </View>
@@ -99,35 +100,30 @@ function Section({ title, children }: { title?: string; children: React.ReactNod
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
+    paddingHorizontal: space[4],
+    paddingBottom: space[16],
+    gap: space[6],
   },
   header: {
-    paddingHorizontal: Spacing.one,
-    gap: Spacing.two,
+    paddingHorizontal: space[1],
+    gap: space[2],
   },
   guarantee: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: space[1],
   },
   guaranteeIcon: {
     width: 16,
     height: 16,
   },
   sections: {
-    gap: Spacing.four,
+    gap: space[6],
   },
   section: {
-    gap: Spacing.two,
+    gap: space[2],
   },
   sectionTitle: {
-    paddingHorizontal: Spacing.one,
-  },
-  status: {
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingTop: Spacing.five,
+    paddingHorizontal: space[1],
   },
 });

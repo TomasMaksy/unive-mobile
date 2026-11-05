@@ -4,12 +4,12 @@ import { useFonts } from 'expo-font';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator } from 'react-native';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { ThemedView } from '@/components/themed-view';
-import { Colors, FontFiles } from '@/constants/theme';
+import { Loading } from '@/components/ui';
+import { colors, fontFiles } from '@/theme';
 import { authClient } from '@/lib/auth-client';
 
 SplashScreen.preventAutoHideAsync();
@@ -18,16 +18,16 @@ const navigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: Colors.text,
-    background: Colors.background,
-    card: Colors.background,
-    text: Colors.text,
-    border: Colors.border,
+    primary: colors.text,
+    background: colors.background,
+    card: colors.background,
+    text: colors.text,
+    border: colors.border,
   },
 };
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts(FontFiles);
+  const [fontsLoaded, fontError] = useFonts(fontFiles);
   const { data: session, isPending } = authClient.useSession();
 
   // Keep the native splash screen up until text can render in the brand fonts.
@@ -39,9 +39,9 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <AnimatedSplashOverlay />
         {isPending ? (
-          <ThemedView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color={Colors.text} />
-          </ThemedView>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <Loading />
+          </View>
         ) : (
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Protected guard={!!session}>
@@ -50,6 +50,8 @@ export default function RootLayout() {
             <Stack.Protected guard={!session}>
               <Stack.Screen name="sign-in" />
             </Stack.Protected>
+            {/* The design system gallery (DESIGN.md): development builds only, signed in or not. */}
+            <Stack.Screen name="design" />
           </Stack>
         )}
       </ThemeProvider>

@@ -12,7 +12,7 @@ import {
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 
 import type { IconButtonProps } from '@/components/icon-button';
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 
 const glass = isLiquidGlassAvailable();
 export const SIZE = 44;
@@ -38,7 +38,7 @@ export function IconButton({ systemImage, accessibilityLabel, onPress }: IconBut
         ]}>
         <Image
           systemName={systemImage}
-          modifiers={[font({ size: 17, weight: 'medium' }), foregroundStyle(Colors.text), frame({ width: 30, height: 30 })]}
+          modifiers={[font({ size: 17, weight: 'medium' }), foregroundStyle(colors.text), frame({ width: 30, height: 30 })]}
         />
       </Button>
     </Host>

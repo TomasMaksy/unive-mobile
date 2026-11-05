@@ -2,15 +2,14 @@ import { Image } from 'expo-image';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ScrollView, type ScrollViewInstance, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuideBlocks } from '@/components/guide-blocks';
 import { IconButton } from '@/components/icon-button';
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { ErrorState, PressableScale, Skeleton, SkeletonText, Text } from '@/components/ui';
+import { alpha, colors, duration, easeUnive, pressScale, shape, space } from '@/theme';
 import { GuideContents } from '@/features/guide/guide-contents';
 import { GuideListenBar } from '@/features/guide/guide-listen-bar';
 import {
@@ -22,8 +21,6 @@ import {
   siteUrl,
 } from '@/lib/guide';
 
-const TITLE_SIZE = 34;
-const HEADING_SIZE = 26;
 const LISTEN_BAR_SPACE = 96;
 
 /**
@@ -68,7 +65,7 @@ export default function GuideTopicScreen() {
 
   function scrollTo(sectionId: string) {
     const y = sectionY.current[sectionId];
-    if (y !== undefined) scrollRef.current?.scrollTo({ y: articleY.current + y - insets.top - Spacing.six, animated: true });
+    if (y !== undefined) scrollRef.current?.scrollTo({ y: articleY.current + y - insets.top - space[16], animated: true });
   }
 
   function listen(id: string) {
@@ -87,7 +84,7 @@ export default function GuideTopicScreen() {
 
   function onScroll(y: number) {
     if (!topic) return;
-    const reading = y + insets.top + Spacing.six + 1;
+    const reading = y + insets.top + space[16] + 1;
     let found = topic.sections[0]?.id ?? null;
     for (const section of topic.sections) {
       const top = sectionY.current[section.id];
@@ -111,7 +108,7 @@ export default function GuideTopicScreen() {
         <Link.AppleZoomTarget>
           <Image
             source={image || topic ? { uri: siteUrl(image ?? topic!.imagePath) } : null}
-            style={[styles.hero, { marginTop: insets.top + Spacing.six, height: width * 0.62 }]}
+            style={[styles.hero, { marginTop: insets.top + space[16], height: width * 0.62 }]}
             contentFit="contain"
             contentPosition="bottom"
           />
@@ -119,23 +116,24 @@ export default function GuideTopicScreen() {
 
         {topic ? (
           <Animated.View
-            entering={FadeIn.duration(300)}
+            entering={FadeIn.duration(duration.standard).easing(easeUnive)}
             style={styles.article}
             onLayout={(event) => {
               articleY.current = event.nativeEvent.layout.y;
             }}>
-            <ThemedText style={styles.title}>{topic.title}</ThemedText>
+            <Text variant="h2" accessibilityRole="header">
+              {topic.title}
+            </Text>
             <View style={styles.subtitle}>
-              <ThemedText themeColor="textSecondary" style={styles.description}>
+              <Text variant="lead" color="textSecondary">
                 {topic.description}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textMuted">
+              </Text>
+              <Text variant="small" color="textMuted">
                 {topic.sections.length} sections · {topic.readingMinutes} min read
-              </ThemedText>
+              </Text>
             </View>
 
             {topic.intro.length > 0 && <GuideBlocks blocks={topic.intro} />}
-
 
             {topic.sections.map((section) => (
               <View
@@ -145,14 +143,14 @@ export default function GuideTopicScreen() {
                   sectionY.current[section.id] = event.nativeEvent.layout.y;
                 }}>
                 <View style={styles.headingRow}>
-                  <ThemedText style={styles.heading}>
+                  <Text variant="title" accessibilityRole="header" style={styles.heading}>
                     {section.emoji ? `${section.emoji} ` : ''}
                     {section.title}
-                  </ThemedText>
+                  </Text>
                   {audioIds.has(section.id) ? (
                     <PressableScale
                       haptic
-                      pressedScale={0.88}
+                      pressedScale={pressScale.button}
                       onPress={() => listen(section.id)}
                       accessibilityRole="button"
                       accessibilityLabel={`Listen to ${section.title}`}
@@ -160,7 +158,7 @@ export default function GuideTopicScreen() {
                       <SymbolView
                         name={playingId === section.id ? 'waveform' : 'speaker.wave.2.fill'}
                         size={15}
-                        tintColor={playingId === section.id ? '#ffffff' : Colors.olive}
+                        tintColor={playingId === section.id ? colors.textInverse : colors.accent}
                         animationSpec={playingId === section.id ? { effect: { type: 'pulse' }, repeating: true } : undefined}
                         style={styles.listenIcon}
                       />
@@ -172,25 +170,25 @@ export default function GuideTopicScreen() {
             ))}
           </Animated.View>
         ) : failed ? (
-          <Pressable onPress={() => router.back()} style={styles.status}>
-            <ThemedText themeColor="textSecondary">Couldn’t load this guide.</ThemedText>
-            <ThemedText themeColor="olive">Go back</ThemedText>
-          </Pressable>
+          <ErrorState message="Couldn’t load this guide." retryLabel="Go back" onRetry={() => router.back()} fill={false} />
         ) : (
-          <ActivityIndicator style={styles.status} color={Colors.textSecondary} />
+          <View style={styles.article}>
+            <Skeleton width="80%" height={space[8]} />
+            <SkeletonText lines={4} />
+          </View>
         )}
       </ScrollView>
 
       {/* Keeps the status bar readable over the text scrolling under it. */}
       <View pointerEvents="none" style={[styles.topFade, { height: insets.top + 84 }]} />
-      <View style={[styles.close, { top: insets.top + Spacing.two }]}>
+      <View style={[styles.close, { top: insets.top + space[2] }]}>
         <IconButton systemImage="xmark" accessibilityLabel="Close" onPress={() => router.back()} />
       </View>
       {topic && showContents ? (
         <Animated.View
-          entering={FadeInUp.springify().damping(18)}
-          exiting={FadeOutUp.duration(160)}
-          style={[styles.contents, { top: insets.top + Spacing.two }]}>
+          entering={FadeInUp.duration(duration.standard).easing(easeUnive)}
+          exiting={FadeOutUp.duration(duration.quick)}
+          style={[styles.contents, { top: insets.top + space[2] }]}>
           <GuideContents
             sections={topic.sections.map(({ id, tocTitle, emoji }) => ({ id, title: tocTitle, emoji }))}
             currentId={currentId}
@@ -209,57 +207,42 @@ export default function GuideTopicScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   hero: {
     width: '100%',
-    marginBottom: Spacing.four,
+    marginBottom: space[6],
   },
   article: {
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    fontFamily: Fonts.heading,
-    fontSize: TITLE_SIZE,
-    lineHeight: TITLE_SIZE * 1.15,
-    // The heading font's tight tracking, like the website's (-0.03em).
-    letterSpacing: TITLE_SIZE * -0.03,
+    paddingHorizontal: space[6],
+    gap: space[6],
   },
   subtitle: {
-    marginTop: -Spacing.three,
-    gap: Spacing.two,
-  },
-  description: {
-    fontSize: 17,
-    lineHeight: 25,
+    marginTop: -space[4],
+    gap: space[2],
   },
   section: {
-    gap: Spacing.three,
-    paddingTop: Spacing.three,
+    gap: space[4],
+    paddingTop: space[4],
   },
   headingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: Spacing.three,
+    gap: space[4],
   },
   heading: {
     flex: 1,
-    fontFamily: Fonts.heading,
-    fontSize: HEADING_SIZE,
-    lineHeight: HEADING_SIZE * 1.2,
-    letterSpacing: HEADING_SIZE * -0.03,
   },
   listen: {
+    ...shape.pill,
     width: 36,
     height: 36,
-    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(111, 118, 68, 0.12)',
+    backgroundColor: alpha('meadow', 0.12),
   },
   listening: {
-    backgroundColor: Colors.olive,
+    backgroundColor: colors.accent,
   },
   listenIcon: {
     width: 18,
@@ -270,20 +253,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    experimental_backgroundImage: `linear-gradient(180deg, ${Colors.background} 62%, rgba(249, 249, 247, 0.85) 78%, rgba(249, 249, 247, 0))`,
+    experimental_backgroundImage: `linear-gradient(180deg, ${colors.background} 62%, ${alpha('paper', 0.85)} 78%, ${alpha('paper', 0)})`,
   },
   close: {
     position: 'absolute',
-    left: Spacing.four,
+    left: space[6],
   },
   // Beside the close button, the same height.
   contents: {
     position: 'absolute',
-    right: Spacing.four,
-  },
-  status: {
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingTop: Spacing.five,
+    right: space[6],
   },
 });

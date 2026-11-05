@@ -2,11 +2,11 @@ import { type AudioPlaylist, setAudioModeAsync, useAudioPlaylist, useAudioPlayli
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
+import { StyleSheet, View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 
-import { PressableScale } from '@/components/pressable-scale';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { PressableScale, Text } from '@/components/ui';
+import { alpha, colors, duration, easeUnive, pressScale, riseIn, shadow, shape, space } from '@/theme';
 import type { GuideAudioSegment } from '@/lib/guide';
 
 const SPEEDS = [1, 1.25, 1.5, 0.75] as const;
@@ -72,9 +72,9 @@ export function GuideListenBar({ segments, request, onSegmentChange, bottomInset
 
   return (
     <Animated.View
-      entering={FadeInDown.springify().damping(16)}
-      layout={LinearTransition.springify()}
-      style={[styles.wrap, { bottom: bottomInset + Spacing.two }]}>
+      entering={riseIn(2)}
+      layout={LinearTransition.duration(duration.standard).easing(easeUnive)}
+      style={[styles.wrap, { bottom: bottomInset + space[2] }]}>
       <Surface>
         <View style={styles.row}>
           <RoundButton
@@ -85,7 +85,7 @@ export function GuideListenBar({ segments, request, onSegmentChange, bottomInset
           <View style={styles.titles}>
             {current && !finished ? (
               <>
-                <Text style={styles.title} numberOfLines={1}>
+                <Text variant="label" numberOfLines={1}>
                   {current.title}
                 </Text>
                 <View style={styles.track}>
@@ -94,15 +94,19 @@ export function GuideListenBar({ segments, request, onSegmentChange, bottomInset
               </>
             ) : (
               <>
-                <Text style={styles.title}>{finished ? 'Listen again' : 'Listen to this guide'}</Text>
-                <Text style={styles.subtitle}>{totalMinutes} min · read aloud</Text>
+                <Text variant="label">{finished ? 'Listen again' : 'Listen to this guide'}</Text>
+                <Text variant="caption" color="textSecondary">
+                  {totalMinutes} min · read aloud
+                </Text>
               </>
             )}
           </View>
           {started && !finished ? (
             <>
               <PressableScale onPress={changeSpeed} accessibilityRole="button" accessibilityLabel="Playback speed" style={styles.speed}>
-                <Text style={styles.speedText}>{SPEEDS[speed]}×</Text>
+                <Text variant="count" style={styles.speedText}>
+                  {SPEEDS[speed]}×
+                </Text>
               </PressableScale>
               <RoundButton
                 systemImage="forward.end.fill"
@@ -132,7 +136,7 @@ function setRate(playlist: AudioPlaylist, rate: number) {
 function Surface({ children }: { children: React.ReactNode }) {
   if (isLiquidGlassAvailable()) {
     return (
-      <GlassView glassEffectStyle="regular" tintColor="rgba(249, 249, 247, 0.75)" isInteractive style={styles.surface}>
+      <GlassView glassEffectStyle="regular" tintColor={colors.paperGlass} isInteractive style={styles.surface}>
         {children}
       </GlassView>
     );
@@ -142,8 +146,8 @@ function Surface({ children }: { children: React.ReactNode }) {
 
 function RoundButton({ systemImage, label, onPress, plain }: { systemImage: SFSymbol; label: string; onPress: () => void; plain?: boolean }) {
   return (
-    <PressableScale haptic pressedScale={0.88} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={[styles.round, plain && styles.roundPlain]}>
-      <SymbolView name={systemImage} size={plain ? 18 : 16} tintColor={plain ? Colors.text : '#ffffff'} style={styles.roundIcon} />
+    <PressableScale haptic pressedScale={pressScale.button} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={[styles.round, plain && styles.roundPlain]}>
+      <SymbolView name={systemImage} size={plain ? 18 : 16} tintColor={plain ? colors.text : colors.textInverse} style={styles.roundIcon} />
     </PressableScale>
   );
 }
@@ -153,35 +157,35 @@ const ROUND = 40;
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: Spacing.three,
-    right: Spacing.three,
+    left: space[4],
+    right: space[4],
   },
   surface: {
-    ...Shape.pill,
+    ...shape.pill,
     overflow: 'hidden',
-    paddingVertical: Spacing.two,
-    paddingLeft: Spacing.two,
-    paddingRight: Spacing.three,
+    paddingVertical: space[2],
+    paddingLeft: space[2],
+    paddingRight: space[4],
   },
   solid: {
-    backgroundColor: Colors.backgroundElement,
-    boxShadow: '0 6px 24px rgba(0, 0, 0, 0.12)',
+    backgroundColor: colors.surface,
+    boxShadow: shadow.raised,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: space[4],
   },
   round: {
+    ...shape.pill,
     width: ROUND,
     height: ROUND,
-    borderRadius: ROUND / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.olive,
+    backgroundColor: colors.accent,
   },
   roundPlain: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.transparent,
     width: 32,
   },
   roundIcon: {
@@ -190,38 +194,25 @@ const styles = StyleSheet.create({
   },
   titles: {
     flex: 1,
-    gap: Spacing.one,
-  },
-  title: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 15,
-    color: Colors.text,
-  },
-  subtitle: {
-    fontFamily: Fonts.sans,
-    fontSize: 13,
-    color: Colors.textSecondary,
+    gap: space[1],
   },
   track: {
     height: 3,
     borderRadius: 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: alpha('ink', 0.1),
     overflow: 'hidden',
   },
   fill: {
     height: 3,
-    backgroundColor: Colors.olive,
+    backgroundColor: colors.accent,
   },
   speed: {
-    ...Shape.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    ...shape.pill,
+    paddingHorizontal: space[2],
+    paddingVertical: space[1],
+    backgroundColor: alpha('ink', 0.06),
   },
   speedText: {
-    fontFamily: Fonts.sansSemiBold,
-    fontSize: 13,
-    color: Colors.text,
     fontVariant: ['tabular-nums'],
   },
 });

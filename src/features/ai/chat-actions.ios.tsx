@@ -17,7 +17,7 @@ import Animated, { FadeIn, FadeOut, LinearTransition, ZoomIn, ZoomOut } from 're
 
 import { IconButton } from '@/components/icon-button';
 import { SIZE } from '@/components/icon-button.ios';
-import { Colors, Spacing } from '@/constants/theme';
+import { colors, space } from '@/theme';
 import type { ChatActionsProps } from '@/features/ai/chat-actions';
 
 const glass = isLiquidGlassAvailable();
@@ -55,7 +55,7 @@ export function ChatActions({ canStartNew, onNewChat, history, currentChatId, on
                 systemName="line.3.horizontal"
                 modifiers={[
                   font({ size: 17, weight: 'medium' }),
-                  foregroundStyle(Colors.text),
+                  foregroundStyle(colors.text),
                   frame({ width: 30, height: 30 }),
                 ]}
               />
@@ -83,6 +83,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: space[2],
   },
 });

@@ -1,8 +1,8 @@
-import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
 
 import { deleteItem, type KnowledgeKind } from '@/lib/knowledge';
 import { FORMS } from '@/lib/knowledge-fields';
+import { haptics } from '@/theme';
 
 /** Asks first, then deletes the item; `onDeleted` runs once it's gone. */
 export function confirmDelete(kind: KnowledgeKind, id: string, onDeleted?: () => void, onCancel?: () => void) {
@@ -15,7 +15,7 @@ export function confirmDelete(kind: KnowledgeKind, id: string, onDeleted?: () =>
       onPress: async () => {
         try {
           await deleteItem(kind, id);
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          haptics.success();
           onDeleted?.();
         } catch {
           Alert.alert(`Couldn't delete this ${noun}`, 'Please try again.');

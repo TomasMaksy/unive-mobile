@@ -1,22 +1,19 @@
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { KnowledgeForm } from '@/components/knowledge-form';
 import { TextFieldRegistry, useTextFieldValues } from '@/components/native-text-field-types';
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { PressableScale, Text } from '@/components/ui';
+import { colors, duration, easeUnive, haptics, pressScale, shape, space } from '@/theme';
 import { confirmDelete } from '@/features/knowledge/delete';
 import { SECTIONS, summaries } from '@/features/knowledge/sections';
 import { addItem, formatMonth, type Knowledge, type KnowledgeKind, updateItem, useKnowledge } from '@/lib/knowledge';
 import { type Draft, type DraftValue, findItem, FORMS, isComplete } from '@/lib/knowledge-fields';
-
-const TITLE_SIZE = 28;
 
 /**
  * One item of the Knowledge Library, on its own page, like a contact card:
@@ -42,7 +39,7 @@ export default function KnowledgeItemScreen() {
   if (!knowledge || !spec || (id && !item)) return null;
 
   function startEditing() {
-    void Haptics.selectionAsync();
+    haptics.tick();
     setDraft(spec.toDraft(item as never));
   }
 
@@ -73,7 +70,7 @@ export default function KnowledgeItemScreen() {
         await addItem(kind, payload);
         router.back();
       }
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
     } catch (error) {
       Alert.alert(`Couldn't save this ${spec.noun.toLowerCase()}`, error instanceof Error ? error.message : 'Please try again.');
     } finally {
@@ -100,7 +97,7 @@ export default function KnowledgeItemScreen() {
             <Stack.Toolbar.Button onPress={cancel}>Cancel</Stack.Toolbar.Button>
           </Stack.Toolbar>
           <Stack.Toolbar placement="right">
-            <Stack.Toolbar.Button variant="prominent" tintColor={Colors.olive} disabled={saving || !isComplete(spec, draft)} onPress={save}>
+            <Stack.Toolbar.Button variant="prominent" tintColor={colors.accent} disabled={saving || !isComplete(spec, draft)} onPress={save}>
               {saving ? 'Saving…' : 'Done'}
             </Stack.Toolbar.Button>
           </Stack.Toolbar>
@@ -112,7 +109,7 @@ export default function KnowledgeItemScreen() {
       )}
 
       {editing ? (
-        <Animated.View key="edit" entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)} style={styles.flex}>
+        <Animated.View key="edit" entering={enter} exiting={exit} style={styles.flex}>
           <TextFieldRegistry value={fields.registry}>
             <KnowledgeForm
               sections={spec.sections}
@@ -125,13 +122,16 @@ export default function KnowledgeItemScreen() {
           </TextFieldRegistry>
         </Animated.View>
       ) : (
-        <Animated.View key="view" entering={FadeIn.duration(220)} exiting={FadeOut.duration(150)} style={styles.flex}>
+        <Animated.View key="view" entering={enter} exiting={exit} style={styles.flex}>
           <ItemView knowledge={knowledge} kind={kind} id={id!} />
         </Animated.View>
       )}
     </>
   );
 }
+
+const enter = FadeIn.duration(duration.standard).easing(easeUnive);
+const exit = FadeOut.duration(duration.quick);
 
 type Fact =
   | { type: 'text'; label: string; value: string }
@@ -209,9 +209,11 @@ function ItemView({ knowledge, kind, id }: { knowledge: Knowledge; kind: Knowled
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
       <View style={styles.head}>
         {isNote ? null : <Image source={{ uri: summary.icon }} style={styles.icon} contentFit="contain" transition={200} />}
-        <ThemedText style={isNote ? styles.noteText : styles.title}>{summary.title}</ThemedText>
+        <Text variant={isNote ? 'lead' : 'h3'} style={isNote && styles.noteText}>
+          {summary.title}
+        </Text>
         {[summary.subtitle, summary.detail].some(Boolean) ? (
-          <ThemedText themeColor="textSecondary">{[summary.subtitle, summary.detail].filter(Boolean).join(' · ')}</ThemedText>
+          <Text color="textSecondary">{[summary.subtitle, summary.detail].filter(Boolean).join(' · ')}</Text>
         ) : null}
       </View>
 
@@ -226,33 +228,31 @@ function FactCard({ fact }: { fact: Fact }) {
   if (fact.type === 'link') {
     const onPress = fact.onPress ?? (fact.url ? () => void Linking.openURL(fact.url!) : undefined);
     return (
-      <PressableScale pressedScale={0.98} haptic accessibilityRole="button" onPress={onPress} style={[styles.card, styles.linkCard]}>
+      <PressableScale pressedScale={pressScale.card} haptic accessibilityRole="button" onPress={onPress} style={[styles.card, styles.linkCard]}>
         <View style={styles.flexText}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <Text variant="small" color="textSecondary">
             {fact.label}
-          </ThemedText>
-          <ThemedText themeColor="olive" style={styles.linkValue}>
+          </Text>
+          <Text variant="headline" color="accent">
             {fact.value}
-          </ThemedText>
+          </Text>
         </View>
-        <ThemedText themeColor="textMuted" style={styles.chevron}>
-          ›
-        </ThemedText>
+        <SymbolView name="chevron.right" size={14} weight="semibold" tintColor={colors.textMuted} />
       </PressableScale>
     );
   }
   return (
     <View style={styles.card}>
-      <ThemedText type="small" themeColor="textSecondary">
+      <Text variant="small" color="textSecondary">
         {fact.label}
-      </ThemedText>
+      </Text>
       {fact.type === 'text' ? (
-        <ThemedText style={styles.body}>{fact.value}</ThemedText>
+        <Text>{fact.value}</Text>
       ) : (
         <View style={styles.chips}>
           {fact.values.map((value) => (
             <View key={value} style={styles.chip}>
-              <ThemedText type="small">{value}</ThemedText>
+              <Text variant="small">{value}</Text>
             </View>
           ))}
         </View>
@@ -263,32 +263,23 @@ function FactCard({ fact }: { fact: Fact }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  flexText: { flex: 1, gap: 2 },
+  flexText: { flex: 1, gap: space[0.5] },
   content: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six,
-    gap: Spacing.two + Spacing.one,
+    paddingHorizontal: space[4],
+    paddingBottom: space[16],
+    gap: space[3],
   },
-  head: { paddingHorizontal: Spacing.one, gap: Spacing.two, marginBottom: Spacing.two },
-  icon: { width: 88, height: 88, marginLeft: -Spacing.one },
-  title: {
-    fontFamily: Fonts.heading,
-    fontSize: TITLE_SIZE,
-    lineHeight: TITLE_SIZE * 1.15,
-    letterSpacing: TITLE_SIZE * -0.03,
-  },
-  noteText: { fontSize: 19, lineHeight: 28, marginTop: Spacing.two },
+  head: { paddingHorizontal: space[1], gap: space[2], marginBottom: space[2] },
+  icon: { width: 88, height: 88, marginLeft: -space[1] },
+  noteText: { marginTop: space[2] },
   card: {
-    ...Shape.card,
-    backgroundColor: Colors.backgroundElement,
-    padding: Spacing.three,
-    paddingHorizontal: Spacing.three + Spacing.one,
-    gap: Spacing.one,
+    ...shape.card,
+    backgroundColor: colors.surface,
+    padding: space[4],
+    paddingHorizontal: space[5],
+    gap: space[1],
   },
-  body: { fontSize: 16, lineHeight: 24 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.one },
-  chip: { ...Shape.pill, backgroundColor: Colors.backgroundGrouped, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 1 },
-  linkCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  linkValue: { fontFamily: Fonts.sansMedium },
-  chevron: { fontSize: 26, lineHeight: 28 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[1] },
+  chip: { ...shape.pill, backgroundColor: colors.backgroundGrouped, paddingHorizontal: space[4], paddingVertical: space[1.5] },
+  linkCard: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
 });

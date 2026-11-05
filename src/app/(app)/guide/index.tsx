@@ -1,16 +1,14 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { PageTitle } from '@/components/page-title';
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { ErrorState, PressableScale, Skeleton, Text } from '@/components/ui';
+import { colors, pressScale, riseIn, shadow, shape, space } from '@/theme';
 import { fetchGuideTopics, type GuideTopicSummary, siteUrl } from '@/lib/guide';
 
-const TITLE_SIZE = 24;
 const ART_SIZE = 96;
 
 /** The Application Guide's topics, like the website's /dashboard/guide. Opened from the profile. */
@@ -31,7 +29,7 @@ export default function GuideScreen() {
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <PageTitle>Application Guide</PageTitle>
-        <ThemedText themeColor="textSecondary">Your step-by-step application course.</ThemedText>
+        <Text color="textSecondary">Your step-by-step application course.</Text>
       </View>
 
       {topics ? (
@@ -41,12 +39,13 @@ export default function GuideScreen() {
           ))}
         </View>
       ) : failed ? (
-        <Pressable onPress={retry} style={styles.status}>
-          <ThemedText themeColor="textSecondary">Couldn’t load the guide.</ThemedText>
-          <ThemedText themeColor="olive">Try again</ThemedText>
-        </Pressable>
+        <ErrorState message="Couldn’t load the guide." onRetry={retry} fill={false} />
       ) : (
-        <ActivityIndicator style={styles.status} color={Colors.textSecondary} />
+        <View style={styles.list}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} shape="block" height={ART_SIZE + space[8]} />
+          ))}
+        </View>
       )}
     </ScrollView>
   );
@@ -61,17 +60,17 @@ function TopicCard({ topic, index }: { topic: GuideTopicSummary; index: number }
     .join(' · ');
 
   return (
-    <Animated.View entering={FadeInDown.delay(50 * index).duration(380)}>
+    <Animated.View entering={riseIn(index)}>
       <Link href={{ pathname: '/guide/[topic]', params: { topic: topic.id, image: topic.imagePath } }} asChild>
         <Link.Trigger withAppleZoom>
-          <PressableScale pressedScale={0.96} haptic accessibilityRole="button" accessibilityLabel={topic.title} style={styles.card}>
+          <PressableScale pressedScale={pressScale.card} haptic accessibilityRole="button" accessibilityLabel={topic.title} style={styles.card}>
             <View style={styles.text}>
-              <ThemedText style={styles.title} numberOfLines={2}>
+              <Text variant="title" numberOfLines={2}>
                 {topic.title}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
+              </Text>
+              <Text variant="small" color="textSecondary">
                 {meta}
-              </ThemedText>
+              </Text>
             </View>
             {/* The illustrations are cut-outs of different shapes; each fits whole. */}
             <Image source={{ uri: siteUrl(topic.imagePath) }} style={styles.art} contentFit="contain" transition={250} />
@@ -84,49 +83,34 @@ function TopicCard({ topic, index }: { topic: GuideTopicSummary; index: number }
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
+    paddingHorizontal: space[4],
+    paddingBottom: space[16],
+    gap: space[6],
   },
   header: {
-    paddingHorizontal: Spacing.one,
-    gap: Spacing.one,
+    paddingHorizontal: space[1],
+    gap: space[1],
   },
   list: {
-    gap: Spacing.two + Spacing.one,
+    gap: space[3],
   },
   card: {
-    ...Shape.card,
+    ...shape.card,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-    paddingLeft: Spacing.four,
-    paddingRight: Spacing.three,
-    backgroundColor: Colors.backgroundElement,
+    gap: space[4],
+    paddingVertical: space[4],
+    paddingLeft: space[6],
+    paddingRight: space[4],
+    backgroundColor: colors.surface,
+    boxShadow: shadow.card,
   },
   text: {
     flex: 1,
-    gap: Spacing.two,
+    gap: space[2],
   },
   art: {
     width: ART_SIZE,
     height: ART_SIZE,
-  },
-  title: {
-    fontFamily: Fonts.heading,
-    fontSize: TITLE_SIZE,
-    lineHeight: TITLE_SIZE * 1.15,
-    // The heading font's tight tracking, like the website's (-0.03em).
-    letterSpacing: TITLE_SIZE * -0.03,
-  },
-  meta: {
-    fontSize: 14,
-    lineHeight: 19,
-  },
-  status: {
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingTop: Spacing.five,
   },
 });

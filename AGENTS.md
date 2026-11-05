@@ -23,6 +23,10 @@ npx expo install --fix      # fix incompatible package versions
 
 Run lint and typecheck before declaring any task done.
 
+## Design system
+
+Read `DESIGN.md` before touching any screen. Tokens live in `src/theme/` (the only place a hex code may appear), components in `src/components/ui/`. Screens use those and nothing else; `npx expo lint` enforces it.
+
 ## Navigation & Routing
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.

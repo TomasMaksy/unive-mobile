@@ -2,10 +2,10 @@ import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { PressableScale } from '@/components/pressable-scale';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { ProfileAvatar } from '@/components/profile-avatar';
-import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Text } from '@/components/ui/text';
+import { space } from '@/theme';
 import { authClient } from '@/lib/auth-client';
 import { useProfileImage } from '@/lib/profile-image';
 
@@ -26,7 +26,7 @@ export function ScreenHeader({ title, left, right }: ScreenHeaderProps) {
         {left ?? <Avatar />}
         {right}
       </View>
-      {title && <ThemedText type="subtitle">{title}</ThemedText>}
+      {title && <Text variant="h3">{title}</Text>}
     </View>
   );
 }
@@ -52,9 +52,9 @@ const AVATAR_SIZE = 44;
 
 const styles = StyleSheet.create({
   header: {
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
+    gap: space[4],
+    paddingHorizontal: space[6],
+    paddingTop: space[2],
   },
   row: {
     flexDirection: 'row',

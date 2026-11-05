@@ -1,17 +1,15 @@
 import * as DocumentPicker from 'expo-document-picker';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
 import { PageTitle } from '@/components/page-title';
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { Loader, PressableScale, Text } from '@/components/ui';
+import { colors, haptics, riseIn, shape, space } from '@/theme';
 import {
   ANALYSIS_MODES,
   type AnalysisMode,
@@ -52,7 +50,7 @@ export default function DropzoneScreen() {
     }
     const ok = files.filter((file) => !tooBig.includes(file)).slice(0, MAX_AT_ONCE);
     if (!ok.length) return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptics.success();
     const results = await Promise.all(ok.map((file) => uploadDocument(file, mode)));
     if (results.some((result) => result.duplicate)) {
       Alert.alert('Already added', 'You added this file before, so Unive used what it found then.');
@@ -109,9 +107,9 @@ export default function DropzoneScreen() {
           <PageTitle>Dropzone</PageTitle>
           <Image source={{ uri: siteUrl('/isomorphic-icons/wingsuit.webp') }} style={styles.titleArt} contentFit="contain" />
         </View>
-        <ThemedText type="small" themeColor="textSecondary">
+        <Text variant="small" color="textSecondary">
           Add your documents and Unive fills in your Knowledge Library, so you don’t have to type it all.
-        </ThemedText>
+        </Text>
       </View>
 
       <View style={styles.actions}>
@@ -129,18 +127,20 @@ export default function DropzoneScreen() {
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               onPress={() => {
-                void Haptics.selectionAsync();
+                haptics.tick();
                 setMode(option.value);
               }}
               style={[styles.mode, active && styles.modeActive]}>
-              <ThemedText style={[styles.modeLabel, active && styles.modeLabelActive]}>{option.label}</ThemedText>
+              <Text variant="label" color={active ? 'text' : 'textSecondary'}>
+                {option.label}
+              </Text>
             </Pressable>
           );
         })}
       </View>
-      <ThemedText type="small" themeColor="textMuted" style={styles.modeDetail}>
+      <Text variant="small" color="textMuted" style={styles.modeDetail}>
         {ANALYSIS_MODES.find((option) => option.value === mode)!.detail}
-      </ThemedText>
+      </Text>
 
       {conflicts.length ? (
         <Section title="Check these" note="A document says something different from your profile. Choose which to keep.">
@@ -166,14 +166,16 @@ export default function DropzoneScreen() {
           <View style={[styles.card, styles.helpful]}>
             {HELPFUL_DOCUMENTS.map((item) => (
               <View key={item} style={styles.helpfulRow}>
-                <SymbolView name="checkmark.circle.fill" size={18} tintColor={Colors.olive} />
-                <ThemedText style={styles.helpfulText}>{item}</ThemedText>
+                <SymbolView name="checkmark.circle.fill" size={18} tintColor={colors.accent} />
+                <Text variant="callout" style={styles.flex}>
+                  {item}
+                </Text>
               </View>
             ))}
           </View>
-          <ThemedText type="small" themeColor="textMuted" style={styles.formats}>
+          <Text variant="small" color="textMuted" style={styles.formats}>
             PDF, Word, text, spreadsheets or photos, up to 5 MB each.
-          </ThemedText>
+          </Text>
         </Section>
       )}
     </ScrollView>
@@ -185,9 +187,9 @@ function Action({ symbol, label, onPress }: { symbol: SFSymbol; label: string; o
     <View style={styles.flex}>
       <PressableScale haptic accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={[styles.card, styles.action]}>
         <View style={styles.actionIcon}>
-          <SymbolView name={symbol} size={26} tintColor={Colors.olive} />
+          <SymbolView name={symbol} size={26} tintColor={colors.accent} />
         </View>
-        <ThemedText style={styles.actionLabel}>{label}</ThemedText>
+        <Text variant="label">{label}</Text>
       </PressableScale>
     </View>
   );
@@ -195,13 +197,13 @@ function Action({ symbol, label, onPress }: { symbol: SFSymbol; label: string; o
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <Animated.View entering={FadeInDown.duration(320)} layout={LinearTransition} style={styles.section}>
+    <Animated.View entering={riseIn(0)} layout={LinearTransition} style={styles.section}>
       <View style={styles.sectionHead}>
-        <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
+        <Text variant="headline">{title}</Text>
         {note ? (
-          <ThemedText type="small" themeColor="textSecondary">
+          <Text variant="small" color="textSecondary">
             {note}
-          </ThemedText>
+          </Text>
         ) : null}
       </View>
       {children}
@@ -232,19 +234,19 @@ function UploadRow({ upload }: { upload: Upload }) {
   const job = upload.job;
 
   let status: string;
-  let tone: 'textSecondary' | 'destructive' | 'olive' = 'textSecondary';
+  let tone: 'textSecondary' | 'dangerText' | 'accent' = 'textSecondary';
   if (upload.uploading) status = 'Uploading…';
   else if (upload.failed) {
     status = upload.failed;
-    tone = 'destructive';
+    tone = 'dangerText';
   } else if (!job || job.status === 'analyzing') status = 'Reading…';
   else if (job.status === 'applying') status = 'Adding to your library…';
   else if (job.status === 'ready') {
     status = summarize(job.result.applied);
-    tone = 'olive';
+    tone = 'accent';
   } else if (job.status === 'error') {
     status = job.error;
-    tone = 'destructive';
+    tone = 'dangerText';
   } else status = 'Stopped';
 
   const working = isWorking(upload);
@@ -254,28 +256,28 @@ function UploadRow({ upload }: { upload: Upload }) {
     <View style={styles.upload}>
       <Image source={{ uri: icon }} style={styles.fileIcon} contentFit="contain" />
       <View style={styles.uploadText}>
-        <ThemedText numberOfLines={1} style={styles.fileName}>
+        <Text variant="headline" numberOfLines={1}>
           {upload.fileName}
-        </ThemedText>
-        <ThemedText type="small" themeColor={tone} numberOfLines={2}>
+        </Text>
+        <Text variant="small" color={tone} numberOfLines={2}>
           {status}
-        </ThemedText>
+        </Text>
         {job?.status === 'ready' ? (
           <Pressable accessibilityRole="link" onPress={() => router.back()} hitSlop={8}>
-            <ThemedText type="small" style={styles.link}>
+            <Text variant="label" color="accent">
               See your library
-            </ThemedText>
+            </Text>
           </Pressable>
         ) : null}
       </View>
       {working ? (
         <View style={styles.uploadSide}>
-          <ActivityIndicator size="small" color={Colors.textSecondary} />
+          <Loader size={16} color={colors.textSecondary} accessibilityLabel="" />
           {!upload.uploading ? (
             <Pressable accessibilityRole="button" hitSlop={8} onPress={() => void cancelUpload(upload.jobId)}>
-              <ThemedText type="small" themeColor="textSecondary">
+              <Text variant="small" color="textSecondary">
                 Stop
-              </ThemedText>
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -286,13 +288,13 @@ function UploadRow({ upload }: { upload: Upload }) {
               accessibilityRole="button"
               hitSlop={8}
               onPress={() => retryUpload(upload.jobId).catch(() => Alert.alert("Couldn't try again", 'Please add the file again.'))}>
-              <ThemedText type="small" style={styles.link}>
+              <Text variant="label" color="accent">
                 Try again
-              </ThemedText>
+              </Text>
             </Pressable>
           ) : null}
           <Pressable accessibilityRole="button" accessibilityLabel="Remove from list" hitSlop={10} onPress={() => dismissUpload(upload.jobId)}>
-            <SymbolView name="xmark.circle.fill" size={20} tintColor={Colors.textMuted} />
+            <SymbolView name="xmark.circle.fill" size={20} tintColor={colors.textMuted} />
           </Pressable>
         </View>
       )}
@@ -307,7 +309,7 @@ function ConflictCard({ conflict }: { conflict: MergedConflict }) {
     setSaving(String(value));
     try {
       await resolveConflict(conflict, value);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
     } catch (error) {
       Alert.alert("Couldn't save", error instanceof Error ? error.message : 'Please try again.');
       setSaving(null);
@@ -318,17 +320,17 @@ function ConflictCard({ conflict }: { conflict: MergedConflict }) {
     <View style={[styles.card, styles.conflict]}>
       <View style={styles.conflictHead}>
         <View style={styles.flex}>
-          <ThemedText style={styles.conflictTitle}>{conflict.label}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          <Text variant="headline">{conflict.label}</Text>
+          <Text variant="small" color="textSecondary" numberOfLines={1}>
             {conflict.fileNames.join(', ')}
-          </ThemedText>
+          </Text>
         </View>
         <Image source={{ uri: siteUrl('/isomorphic-icons/conflict.webp') }} style={styles.conflictArt} contentFit="contain" />
       </View>
       {conflict.detail ? (
-        <ThemedText type="small" themeColor="textMuted">
+        <Text variant="small" color="textMuted">
           {conflict.detail}
-        </ThemedText>
+        </Text>
       ) : null}
       {conflict.options.map((option) => (
         <PressableScale
@@ -339,15 +341,17 @@ function ConflictCard({ conflict }: { conflict: MergedConflict }) {
           onPress={() => keep(option.value)}
           style={[styles.option, saving != null && saving !== String(option.value) && styles.optionFaded]}>
           <View style={styles.flex}>
-            <ThemedText style={styles.optionValue}>{String(option.value)}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
+            <Text variant="headline">{String(option.value)}</Text>
+            <Text variant="small" color="textSecondary">
               {option.source === 'profile' ? 'Your profile' : 'From your document'}
-            </ThemedText>
+            </Text>
           </View>
           {saving === String(option.value) ? (
-            <ActivityIndicator size="small" color={Colors.olive} />
+            <Loader size={16} color={colors.accent} accessibilityLabel="Saving" />
           ) : (
-            <ThemedText style={styles.keep}>Keep</ThemedText>
+            <Text variant="label" color="accent">
+              Keep
+            </Text>
           )}
         </PressableScale>
       ))}
@@ -357,65 +361,54 @@ function ConflictCard({ conflict }: { conflict: MergedConflict }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.six, gap: Spacing.three },
-  header: { paddingHorizontal: Spacing.one, gap: Spacing.one },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  content: { paddingHorizontal: space[4], paddingBottom: space[16], gap: space[4] },
+  header: { paddingHorizontal: space[1], gap: space[1] },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   titleArt: { width: 44, height: 44 },
-  card: { ...Shape.card, backgroundColor: Colors.backgroundElement },
-  actions: { flexDirection: 'row', gap: Spacing.two + Spacing.one, marginTop: Spacing.one },
-  action: { alignItems: 'center', paddingVertical: Spacing.three + Spacing.one, gap: Spacing.two },
+  card: { ...shape.card, backgroundColor: colors.surface },
+  actions: { flexDirection: 'row', gap: space[2] + space[1], marginTop: space[1] },
+  action: { alignItems: 'center', paddingVertical: space[4] + space[1], gap: space[2] },
   actionIcon: {
+    ...shape.pill,
     width: 52,
     height: 52,
-    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f2e6',
+    backgroundColor: colors.accentSoft,
   },
-  actionLabel: { fontFamily: Fonts.sansSemiBold, fontSize: 15, lineHeight: 20 },
   modes: {
     flexDirection: 'row',
     alignSelf: 'center',
     padding: 3,
-    gap: 2,
-    ...Shape.pill,
-    backgroundColor: '#e2e0d8',
+    gap: space[0.5],
+    ...shape.pill,
+    backgroundColor: colors.fillPressed,
   },
-  mode: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one + 2, ...Shape.pill },
-  modeActive: { backgroundColor: Colors.backgroundElement },
-  modeLabel: { fontFamily: Fonts.sansMedium, fontSize: 14, lineHeight: 18, color: Colors.textSecondary },
-  modeLabelActive: { color: Colors.text },
-  modeDetail: { textAlign: 'center', marginTop: -Spacing.two },
-  section: { gap: Spacing.two, marginTop: Spacing.two },
-  sectionHead: { paddingHorizontal: Spacing.one, gap: 2 },
-  sectionTitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
-  list: { paddingHorizontal: Spacing.three },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: Colors.border, marginLeft: 48 },
-  upload: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.three },
+  mode: { paddingHorizontal: space[4], paddingVertical: space[1.5], ...shape.pill },
+  modeActive: { backgroundColor: colors.surface },
+  modeDetail: { textAlign: 'center', marginTop: -space[2] },
+  section: { gap: space[2], marginTop: space[2] },
+  sectionHead: { paddingHorizontal: space[1], gap: space[0.5] },
+  list: { paddingHorizontal: space[4] },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginLeft: 48 },
+  upload: { flexDirection: 'row', alignItems: 'center', gap: space[4], paddingVertical: space[4] },
   fileIcon: { width: 32, height: 38 },
-  uploadText: { flex: 1, gap: 2 },
-  fileName: { fontFamily: Fonts.sansMedium, fontSize: 15, lineHeight: 20 },
-  uploadSide: { alignItems: 'center', gap: Spacing.two },
-  link: { fontFamily: Fonts.sansMedium, color: Colors.olive },
-  helpful: { padding: Spacing.three, gap: Spacing.two + 2 },
-  helpfulRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two + 2 },
-  helpfulText: { flex: 1, fontSize: 15, lineHeight: 21 },
-  formats: { paddingHorizontal: Spacing.one },
-  conflict: { padding: Spacing.three, gap: Spacing.two + 2 },
-  conflictHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  conflictTitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
+  uploadText: { flex: 1, gap: space[0.5] },
+  uploadSide: { alignItems: 'center', gap: space[2] },
+  helpful: { padding: space[4], gap: space[2] + 2 },
+  helpfulRow: { flexDirection: 'row', alignItems: 'center', gap: space[2] + 2 },
+  formats: { paddingHorizontal: space[1] },
+  conflict: { padding: space[4], gap: space[2] + 2 },
+  conflictHead: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   conflictArt: { width: 44, height: 44 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.two + 4,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: Colors.backgroundGrouped,
+    gap: space[2],
+    paddingVertical: space[3],
+    paddingHorizontal: space[4],
+    ...shape.tile,
+    backgroundColor: colors.backgroundGrouped,
   },
   optionFaded: { opacity: 0.4 },
-  optionValue: { fontFamily: Fonts.sansSemiBold, fontSize: 18, lineHeight: 24 },
-  keep: { fontFamily: Fonts.sansSemiBold, fontSize: 15, color: Colors.olive },
 });

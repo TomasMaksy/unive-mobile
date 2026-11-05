@@ -1,13 +1,13 @@
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { RefreshControl, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Fonts, Shape, Spacing } from '@/constants/theme';
+import { PageTitle } from '@/components/page-title';
+import { ErrorState, Loader, Loading, PressableScale, Progress, Text } from '@/components/ui';
+import { alpha, colors, haptics, riseIn, shape, space } from '@/theme';
 import { Bookshelf } from '@/features/knowledge/bookshelf';
 import { schoolLabel, toSchool } from '@/features/knowledge/about';
 import { countryName } from '@/features/knowledge/country';
@@ -16,8 +16,6 @@ import { countOf, SECTION_ICON, SECTION_ORDER, SECTIONS } from '@/features/knowl
 import { siteUrl } from '@/lib/guide';
 import { EDUCATION_STAGES, type Knowledge, type KnowledgeKind, refreshKnowledge, useKnowledge } from '@/lib/knowledge';
 
-const TITLE_SIZE = 32;
-const PERCENT_SIZE = 26;
 const SHELF_SIZE = 132;
 
 /** Everything the AI knows about you, like the website's Knowledge Library. Opened from the profile. */
@@ -40,17 +38,15 @@ export default function KnowledgeScreen() {
     return (
       <View style={styles.center}>
         {failed ? (
-          <Pressable
-            onPress={() => {
+          <ErrorState
+            message="Couldn’t load your Knowledge Library."
+            onRetry={() => {
               setFailed(false);
-              refreshKnowledge().catch(() => setFailed(true));
+              return refreshKnowledge().catch(() => setFailed(true));
             }}
-            style={styles.retry}>
-            <ThemedText themeColor="textSecondary">Couldn’t load your Knowledge Library.</ThemedText>
-            <ThemedText themeColor="olive">Try again</ThemedText>
-          </Pressable>
+          />
         ) : (
-          <ActivityIndicator color={Colors.textSecondary} />
+          <Loading />
         )}
       </View>
     );
@@ -79,9 +75,9 @@ export default function KnowledgeScreen() {
   );
 }
 
-function Appear({ index, style, children }: { index: number; style?: object; children: React.ReactNode }) {
+function Appear({ index, style, children }: { index: number; style?: StyleProp<ViewStyle>; children: React.ReactNode }) {
   return (
-    <Animated.View entering={FadeInDown.delay(40 * index).duration(380)} style={style}>
+    <Animated.View entering={riseIn(index)} style={style}>
       {children}
     </Animated.View>
   );
@@ -95,23 +91,19 @@ function Header({ knowledge }: { knowledge: Knowledge }) {
       <View style={styles.hero}>
         <Bookshelf percent={percent} size={SHELF_SIZE} />
         <View style={styles.heroText}>
-          <ThemedText accessibilityRole="header" style={styles.title}>
-            Knowledge Library
-          </ThemedText>
-          <ThemedText style={styles.percent}>
+          <PageTitle>Knowledge Library</PageTitle>
+          <Text variant="title" style={styles.numbers}>
             {`${percent}%`}
-            <ThemedText type="small" themeColor="textSecondary">
+            <Text variant="small" color="textSecondary">
               {'  complete'}
-            </ThemedText>
-          </ThemedText>
-          <View style={styles.track}>
-            <View style={[styles.fill, { width: `${Math.min(100, percent)}%` }]} />
-          </View>
+            </Text>
+          </Text>
+          <Progress value={Math.min(100, percent)} accessibilityLabel={`${percent}% complete`} />
         </View>
       </View>
-      <ThemedText type="small" themeColor="textSecondary">
+      <Text variant="small" color="textSecondary">
         Everything the AI knows about you. The more it knows, the better its advice.
-      </ThemedText>
+      </Text>
     </View>
   );
 }
@@ -137,12 +129,12 @@ function DropzoneCard() {
       style={[styles.card, styles.dropzone]}>
       <Image source={{ uri: siteUrl('/isomorphic-icons/cv.webp') }} style={styles.dropzoneArt} contentFit="contain" />
       <View style={styles.flex}>
-        <ThemedText style={styles.cardTitle}>Add documents</ThemedText>
-        <ThemedText type="small" themeColor={reading || toCheck ? 'olive' : 'textSecondary'}>
+        <Text variant="headline">Add documents</Text>
+        <Text variant="small" color={reading || toCheck ? 'accent' : 'textSecondary'}>
           {status}
-        </ThemedText>
+        </Text>
       </View>
-      {reading ? <ActivityIndicator size="small" color={Colors.olive} /> : null}
+      {reading ? <Loader size={16} color={colors.accent} accessibilityLabel="" /> : null}
     </PressableScale>
   );
 }
@@ -160,14 +152,12 @@ function AboutCard({ knowledge }: { knowledge: Knowledge }) {
     <PressableScale haptic accessibilityRole="button" onPress={() => router.push('/knowledge/about')} style={[styles.card, styles.about]}>
       <View style={styles.aboutTop}>
         <View style={styles.flex}>
-          <ThemedText style={styles.cardTitle}>About you</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+          <Text variant="headline">About you</Text>
+          <Text variant="small" color="textSecondary" numberOfLines={2}>
             {[stage, school, where].filter(Boolean).join(' · ') || 'Your school, location and scores'}
-          </ThemedText>
+          </Text>
         </View>
-        <ThemedText themeColor="textMuted" style={styles.chevron}>
-          ›
-        </ThemedText>
+        <SymbolView name="chevron.right" size={14} weight="semibold" tintColor={colors.textMuted} />
       </View>
       <View style={styles.stats}>
         <Stat label="GPA" value={academics.gpa == null ? null : academics.gpa.toFixed(2)} />
@@ -182,10 +172,12 @@ function AboutCard({ knowledge }: { knowledge: Knowledge }) {
 function Stat({ label, value }: { label: string; value: string | null }) {
   return (
     <View style={styles.stat}>
-      <ThemedText style={[styles.statValue, value == null && { color: Colors.textMuted }]}>{value ?? '—'}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.statLabel}>
+      <Text variant="title" color={value == null ? 'textMuted' : 'text'} style={styles.numbers}>
+        {value ?? '—'}
+      </Text>
+      <Text variant="caption" color="textSecondary">
         {label}
-      </ThemedText>
+      </Text>
     </View>
   );
 }
@@ -199,80 +191,54 @@ function SectionTile({ kind, count }: { kind: KnowledgeKind; count: number }) {
       accessibilityRole="button"
       accessibilityLabel={`${section.title}, ${count}`}
       onPress={() => {
-        void Haptics.selectionAsync();
+        haptics.tick();
         router.push({ pathname: '/knowledge/[kind]', params: { kind } });
       }}
       style={[styles.card, styles.tile]}>
       <Image source={{ uri: SECTION_ICON(kind) }} style={styles.tileArt} contentFit="contain" transition={200} />
       <View>
-        <ThemedText style={styles.tileTitle}>{section.title}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
+        <Text variant="headline">{section.title}</Text>
+        <Text variant="small" color="textSecondary">
           {count === 0 ? 'Add your first' : String(count)}
-        </ThemedText>
+        </Text>
       </View>
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.backgroundGrouped,
-  },
-  retry: { alignItems: 'center', gap: Spacing.one },
+  center: { flex: 1, backgroundColor: colors.backgroundGrouped },
   content: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
+    paddingHorizontal: space[4],
+    paddingBottom: space[16],
+    gap: space[4],
   },
-  flex: { flex: 1, gap: Spacing.half },
-  header: { gap: Spacing.two, paddingHorizontal: Spacing.one },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  heroText: { flex: 1, gap: Spacing.two },
-  title: {
-    fontFamily: Fonts.heading,
-    fontSize: TITLE_SIZE,
-    lineHeight: TITLE_SIZE * 1.08,
-    letterSpacing: TITLE_SIZE * -0.03,
-  },
-  percent: {
-    fontFamily: Fonts.heading,
-    fontSize: PERCENT_SIZE,
-    lineHeight: PERCENT_SIZE * 1.2,
-    letterSpacing: PERCENT_SIZE * -0.03,
-    fontVariant: ['tabular-nums'],
-  },
-  track: { height: 6, borderRadius: 3, backgroundColor: '#dcdad2', overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 3, backgroundColor: Colors.olive },
+  flex: { flex: 1, gap: space[0.5] },
+  header: { gap: space[2], paddingHorizontal: space[1] },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  heroText: { flex: 1, gap: space[2] },
+  numbers: { fontVariant: ['tabular-nums'] },
   card: {
-    ...Shape.card,
-    backgroundColor: Colors.backgroundElement,
+    ...shape.card,
+    backgroundColor: colors.surface,
   },
-  cardTitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
   dropzone: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    backgroundColor: '#f1f2e6',
+    gap: space[4],
+    padding: space[4],
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#c5c9a4',
+    borderColor: alpha('meadow', 0.4),
   },
   dropzoneArt: { width: 60, height: 60 },
-  about: { padding: Spacing.three, paddingLeft: Spacing.three + Spacing.one, gap: Spacing.three },
-  aboutTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  chevron: { fontSize: 26, lineHeight: 28 },
-  stats: { flexDirection: 'row', gap: Spacing.two },
+  about: { padding: space[4], paddingLeft: space[5], gap: space[4] },
+  aboutTop: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  stats: { flexDirection: 'row', gap: space[2] },
   stat: { flex: 1 },
-  statValue: { fontFamily: Fonts.heading, fontSize: 22, lineHeight: 26, letterSpacing: 22 * -0.03, fontVariant: ['tabular-nums'] },
-  statLabel: { fontSize: 12, lineHeight: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: Spacing.two + Spacing.one },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space[3] },
   tileCell: { width: '48.5%' },
-  tile: { padding: Spacing.three, gap: Spacing.two, minHeight: 128, justifyContent: 'space-between' },
+  tile: { padding: space[4], gap: space[2], minHeight: 128, justifyContent: 'space-between' },
   tileArt: { width: 52, height: 52 },
-  tileTitle: { fontFamily: Fonts.sansSemiBold, fontSize: 16, lineHeight: 21 },
 });

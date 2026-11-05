@@ -2,13 +2,11 @@
 // To bring it back, add a route in src/app/(app) that renders this screen
 // and a tab for it in src/components/app-tabs.tsx.
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Colors, Shape, Spacing } from '@/constants/theme';
+import { Button, Card, ErrorState, Loading, PressableScale, Text } from '@/components/ui';
+import { colors, space } from '@/theme';
 import { fetchCurrentPlan, type Plan, requestPlan, resolveTask, type Task } from '@/lib/action-plan';
 
 const POLL_INTERVAL_MS = 2_500;
@@ -61,43 +59,41 @@ export default function TodayScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.textSecondary} />}>
-          <ThemedText type="subtitle">Today</ThemedText>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecondary} />}>
+          <Text variant="h3">Today</Text>
 
           {loading ? (
-            <ActivityIndicator color={Colors.text} style={styles.spinner} />
+            <Loading fill={false} style={styles.wait} />
           ) : error ? (
-            <ThemedText themeColor="textSecondary">{error}</ThemedText>
+            <ErrorState message={error} onRetry={load} fill={false} />
           ) : !plan ? (
-            <ThemedText themeColor="textSecondary">No plan yet. Pull down to try again.</ThemedText>
+            <Text color="textSecondary">No plan yet. Pull down to try again.</Text>
           ) : plan.status === 'generating' ? (
-            <View style={styles.row}>
-              <ActivityIndicator color={Colors.textSecondary} />
-              <ThemedText themeColor="textSecondary">Putting together today’s plan…</ThemedText>
-            </View>
+            <Loading label="Putting together today’s plan…" variant="write" fill={false} style={styles.wait} />
           ) : plan.status === 'failed' ? (
-            <>
-              <ThemedText themeColor="textSecondary">We couldn’t build today’s plan.</ThemedText>
-              {plan.canRetry && <Button label="Try again" onPress={retry} />}
-            </>
+            <ErrorState
+              title="We couldn’t build today’s plan"
+              onRetry={plan.canRetry ? retry : undefined}
+              fill={false}
+            />
           ) : (
             <>
-              {plan.summary && <ThemedText themeColor="textSecondary">{plan.summary}</ThemedText>}
+              {plan.summary && <Text color="textSecondary">{plan.summary}</Text>}
               {plan.tasks.map((task) => (
                 <TaskCard key={task.id} task={task} onPlanChange={setPlan} />
               ))}
               {plan.status === 'completed' && (
-                <ThemedText themeColor="textSecondary">All done for today. Nice work.</ThemedText>
+                <Text color="textSecondary">All done for today. Nice work.</Text>
               )}
             </>
           )}
         </ScrollView>
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -121,12 +117,16 @@ function TaskCard({ task, onPlanChange }: { task: Task; onPlanChange: (plan: Pla
   }
 
   return (
-    <ThemedView type="backgroundElement" style={[styles.card, resolved && styles.resolved]}>
-      <Pressable onPress={() => setExpanded((value) => !value)} style={styles.cardHeader}>
-        <ThemedText type="smallBold" style={task.status === 'completed' && styles.done}>
+    <Card style={[styles.card, resolved && styles.resolved]}>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        onPress={() => setExpanded((value) => !value)}
+        style={styles.cardHeader}>
+        <Text variant="headline" style={task.status === 'completed' && styles.done}>
           {task.title}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
+        </Text>
+        <Text variant="small" color="textSecondary">
           {[
             task.timing?.label,
             `${task.estimatedMinutes} min`,
@@ -134,38 +134,38 @@ function TaskCard({ task, onPlanChange }: { task: Task; onPlanChange: (plan: Pla
           ]
             .filter(Boolean)
             .join(' · ')}
-        </ThemedText>
+        </Text>
         {isDeadline && task.timing?.date && (
-          <ThemedText type="small" themeColor="brandBlue">
+          <Text variant="small" color="accent">
             Deadline {task.timing.date}
             {task.timing.sourceLabel ? ` (${task.timing.sourceLabel})` : ''}
-          </ThemedText>
+          </Text>
         )}
-      </Pressable>
+      </PressableScale>
 
       {expanded && (
         <View style={styles.details}>
-          <ThemedText type="small">{task.whyNow}</ThemedText>
+          <Text variant="small">{task.whyNow}</Text>
           {task.instructions.map((step, i) => (
-            <ThemedText key={i} type="small" themeColor="textSecondary">
+            <Text key={i} variant="small" color="textSecondary">
               {i + 1}. {step}
-            </ThemedText>
+            </Text>
           ))}
-          <ThemedText type="small" themeColor="textSecondary">
+          <Text variant="small" color="textSecondary">
             Done when: {task.definitionOfDone}
-          </ThemedText>
+          </Text>
           {task.executionMode === 'in_unive' && (
-            <ThemedText type="small" themeColor="textSecondary">
+            <Text variant="small" color="textSecondary">
               This one happens on the Unive website.
-            </ThemedText>
+            </Text>
           )}
         </View>
       )}
 
       {error && (
-        <ThemedText type="small" themeColor="destructive">
+        <Text variant="small" color="dangerText">
           {error}
-        </ThemedText>
+        </Text>
       )}
 
       {!resolved && (
@@ -187,39 +187,39 @@ function TaskCard({ task, onPlanChange }: { task: Task; onPlanChange: (plan: Pla
           />
         </View>
       )}
-    </ThemedView>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
   },
   content: {
-    gap: Spacing.three,
+    gap: space[4],
     // iOS adds the tab bar's height below this list by itself (automatic content insets).
-    padding: Spacing.four,
+    padding: space[6],
   },
-  spinner: {
-    marginTop: Spacing.five,
+  wait: {
+    marginTop: space[8],
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: space[2],
   },
   flex: {
     flex: 1,
   },
   card: {
-    ...Shape.card,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.three,
-    gap: Spacing.three,
+    gap: space[4],
   },
   cardHeader: {
-    gap: Spacing.one,
+    gap: space[1],
   },
   resolved: {
     opacity: 0.6,
@@ -228,6 +228,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   details: {
-    gap: Spacing.two,
+    gap: space[2],
   },
 });

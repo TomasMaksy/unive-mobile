@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 
 // No navigation bar: the page scrolls up under the status bar and a floating
 // back button (glass on iOS 26), and shows its own title in the content.
@@ -10,14 +10,14 @@ const linkedScreen = {
   headerTitle: '',
   headerShadowVisible: false,
   headerBackTitle: 'Profile',
-  headerTintColor: Colors.text,
-  contentStyle: { backgroundColor: Colors.backgroundGrouped },
+  headerTintColor: colors.text,
+  contentStyle: { backgroundColor: colors.backgroundGrouped },
 } as const;
 
 /** Signed in: the tabs, with the profile zooming out of the avatar on top of them. */
 export default function SignedInLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="(tabs)" />
       {/* A full-screen push, so Apple's zoom transition can run (it doesn't work with sheets).
           No navigation header: it would stay put while the screen zooms underneath it.

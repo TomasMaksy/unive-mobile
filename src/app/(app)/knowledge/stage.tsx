@@ -1,17 +1,12 @@
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import Animated, {
-  FadeInDown,
-  LinearTransition,
-} from "react-native-reanimated";
+import Animated, { LinearTransition } from "react-native-reanimated";
 
 import { PageTitle } from "@/components/page-title";
-import { PressableScale } from "@/components/pressable-scale";
-import { ThemedText } from "@/components/themed-text";
-import { Colors, Fonts, Shape, Spacing } from "@/constants/theme";
+import { PressableScale, Text } from "@/components/ui";
+import { colors, haptics, pressScale, riseIn, shape, space } from "@/theme";
 import { finishPick } from "@/features/knowledge/picker";
 import { siteUrl } from "@/lib/guide";
 import { EDUCATION_STAGES } from "@/lib/knowledge";
@@ -84,7 +79,7 @@ export default function StageScreen() {
   useEffect(() => () => finishPick(pick), [pick]);
 
   function choose(value: string) {
-    void Haptics.selectionAsync();
+    haptics.tick();
     finishPick(pick, { code: value, name: EDUCATION_STAGES[value] ?? value });
     router.back();
   }
@@ -93,7 +88,7 @@ export default function StageScreen() {
     const next = LEVELS.find((entry) => entry.id === id)!;
     // Master's and doctoral have no years: one tap is enough.
     if (next.years.length === 1) return choose(next.years[0].value);
-    void Haptics.selectionAsync();
+    haptics.tick();
     setLevelId(id);
   }
 
@@ -106,9 +101,9 @@ export default function StageScreen() {
       >
         <View style={styles.header}>
           <PageTitle>Stage</PageTitle>
-          <ThemedText type="small" themeColor="textSecondary">
+          <Text variant="small" color="textSecondary">
             Where are you studying now?
-          </ThemedText>
+          </Text>
         </View>
 
         <View style={styles.grid}>
@@ -132,12 +127,10 @@ export default function StageScreen() {
                     contentFit="contain"
                     transition={200}
                   />
-                  <ThemedText style={styles.levelTitle}>
-                    {entry.title}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
+                  <Text variant="headline">{entry.title}</Text>
+                  <Text variant="small" color="textSecondary">
                     {entry.subtitle}
-                  </ThemedText>
+                  </Text>
                 </PressableScale>
               </View>
             );
@@ -147,34 +140,32 @@ export default function StageScreen() {
         {hasYears ? (
           <Animated.View
             key={level.id}
-            entering={FadeInDown.duration(320)}
+            entering={riseIn(0)}
             layout={LinearTransition}
             style={[styles.card, styles.years]}
           >
-            <ThemedText style={styles.yearsTitle}>
+            <Text variant="headline">
               {level.id === "high-school" ? "Which grade?" : "Which year?"}
-            </ThemedText>
+            </Text>
             <View style={styles.yearRow}>
               {level.years.map((year) => {
                 const active = year.value === selected;
                 return (
                   <View key={year.value} style={styles.yearCell}>
                     <PressableScale
-                      pressedScale={0.92}
+                      pressedScale={pressScale.button}
                       accessibilityRole="button"
                       accessibilityLabel={EDUCATION_STAGES[year.value]}
                       accessibilityState={{ selected: active }}
                       onPress={() => choose(year.value)}
                       style={[styles.year, active && styles.yearActive]}
                     >
-                      <ThemedText
-                        style={[
-                          styles.yearText,
-                          active && styles.yearTextActive,
-                        ]}
+                      <Text
+                        variant="title"
+                        color={active ? "textInverse" : "text"}
                       >
                         {year.label}
-                      </ThemedText>
+                      </Text>
                     </PressableScale>
                   </View>
                 );
@@ -189,53 +180,43 @@ export default function StageScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
+    paddingHorizontal: space[4],
+    paddingBottom: space[16],
+    gap: space[4],
   },
   header: {
-    paddingHorizontal: Spacing.one,
-    gap: Spacing.one,
-    marginBottom: Spacing.one,
+    paddingHorizontal: space[1],
+    gap: space[1],
+    marginBottom: space[1],
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    rowGap: Spacing.two + Spacing.one,
+    rowGap: space[3],
   },
-  card: { ...Shape.card, backgroundColor: Colors.backgroundElement },
+  card: { ...shape.card, backgroundColor: colors.surface },
   cell: { width: "48.5%" },
   level: {
-    padding: Spacing.three,
-    gap: 2,
+    padding: space[4],
+    gap: space[0.5],
     borderWidth: 2,
-    borderColor: "transparent",
+    borderColor: colors.transparent,
   },
-  levelActive: { borderColor: Colors.olive, backgroundColor: "#f6f7ee" },
-  levelArt: { width: 56, height: 56, marginBottom: Spacing.two },
-  levelTitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
+  levelActive: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  levelArt: { width: 56, height: 56, marginBottom: space[2] },
   years: {
-    padding: Spacing.three,
-    paddingHorizontal: Spacing.three + Spacing.one,
-    gap: Spacing.three,
+    padding: space[4],
+    paddingHorizontal: space[5],
+    gap: space[4],
   },
-  yearsTitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
-  yearRow: { flexDirection: "row", gap: Spacing.two },
+  yearRow: { flexDirection: "row", gap: space[2] },
   yearCell: { flex: 1 },
   year: {
     alignItems: "center",
-    paddingVertical: Spacing.three,
-    borderRadius: 16,
-    borderCurve: "continuous",
-    backgroundColor: Colors.backgroundGrouped,
+    paddingVertical: space[4],
+    ...shape.tile,
+    backgroundColor: colors.backgroundGrouped,
   },
-  yearActive: { backgroundColor: Colors.olive },
-  yearText: {
-    fontFamily: Fonts.heading,
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: 22 * -0.03,
-  },
-  yearTextActive: { color: "#fff" },
+  yearActive: { backgroundColor: colors.accent },
 });

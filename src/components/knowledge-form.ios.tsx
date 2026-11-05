@@ -29,7 +29,7 @@ import {
 
 import type { KnowledgeFormProps } from '@/components/knowledge-form-types';
 import { NativeTextField } from '@/components/native-text-field';
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 import { isoToDate, toYearMonth } from '@/lib/knowledge';
 import type { DraftValue, Field } from '@/lib/knowledge-fields';
 
@@ -43,9 +43,9 @@ export function KnowledgeForm({ sections, draft, onChange, activities, onDelete,
         modifiers={[
           listStyle('insetGrouped'),
           scrollContentBackground('hidden'),
-          background(Colors.backgroundGrouped),
+          background(colors.backgroundGrouped),
           scrollDismissesKeyboard('interactively'),
-          tint(Colors.olive),
+          tint(colors.accent),
         ]}>
         {sections.map((section, index) => {
           const fields = section.fields.filter((field) => !(field.type === 'month' && field.hiddenWhen && draft[field.hiddenWhen]));
@@ -136,15 +136,15 @@ function FieldRow({
           />
           {field.required ? null : (
             <Button onPress={() => onChange(null)}>
-              <Image systemName="xmark.circle.fill" modifiers={[font({ size: 18 }), foregroundStyle(Colors.textMuted)]} />
+              <Image systemName="xmark.circle.fill" modifiers={[font({ size: 18 }), foregroundStyle(colors.textMuted)]} />
             </Button>
           )}
         </HStack>
       ) : (
         <Button onPress={() => onChange(toYearMonth(new Date()))}>
           <HStack spacing={10}>
-            <Image systemName="calendar.badge.plus" modifiers={[font({ size: 17 }), foregroundStyle(Colors.olive)]} />
-            <Text modifiers={[foregroundStyle(Colors.olive)]}>{`Add ${field.label.toLowerCase()} date`}</Text>
+            <Image systemName="calendar.badge.plus" modifiers={[font({ size: 17 }), foregroundStyle(colors.accent)]} />
+            <Text modifiers={[foregroundStyle(colors.accent)]}>{`Add ${field.label.toLowerCase()} date`}</Text>
           </HStack>
         </Button>
       );
@@ -176,7 +176,7 @@ function NativeText({
       modifiers={[
         ...(multiline
           ? [lineLimit({ min: 4, max: 12 })]
-          : [multilineTextAlignment('trailing'), foregroundStyle(Colors.textSecondary)]),
+          : [multilineTextAlignment('trailing'), foregroundStyle(colors.textSecondary)]),
         ...(keyboard ? [keyboardType(keyboard), autocorrectionDisabled(), textInputAutocapitalization('never')] : []),
       ]}
     />

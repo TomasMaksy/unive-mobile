@@ -4,8 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/icon-button';
 import { ProfileList } from '@/components/profile-list';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { colors, space } from '@/theme';
 import { authClient, signOut } from '@/lib/auth-client';
 import { useEditProfilePhoto } from '@/lib/use-edit-profile-photo';
 
@@ -24,7 +23,7 @@ export default function ProfileScreen() {
   const { imageUrl, uploading: uploadingPhoto, editPhoto } = useEditProfilePhoto();
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[{ backgroundColor: colors.background }, styles.container]}>
       <ProfileList
         name={fullName}
         email={session?.user.email ?? ''}
@@ -35,10 +34,10 @@ export default function ProfileScreen() {
         onOpen={(screen) => router.push(`/${screen}`)}
         onSignOut={signOut}
       />
-      <View style={[styles.close, { top: insets.top + Spacing.two }]}>
+      <View style={[styles.close, { top: insets.top + space[2] }]}>
         <IconButton systemImage="xmark" accessibilityLabel="Close" onPress={() => router.back()} />
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -49,6 +48,6 @@ const styles = StyleSheet.create({
   // Same spot and size as the avatar it zoomed out of (see screen-header.tsx).
   close: {
     position: 'absolute',
-    left: Spacing.four,
+    left: space[6],
   },
 });

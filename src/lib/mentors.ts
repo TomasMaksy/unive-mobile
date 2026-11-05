@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 
-import { Colors } from '@/constants/theme';
+import { colors } from '@/theme';
 import { apiFetch } from '@/lib/api';
 import { API_URL } from '@/lib/auth-client';
 
@@ -69,7 +69,7 @@ export function bookMentor(mentor: Mentor, prefill: Mentors['prefill']) {
   if (prefill.email) url.searchParams.set('email', prefill.email);
   return WebBrowser.openBrowserAsync(url.toString(), {
     presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-    controlsColor: Colors.olive,
+    controlsColor: colors.accent,
     dismissButtonStyle: 'close',
   });
 }

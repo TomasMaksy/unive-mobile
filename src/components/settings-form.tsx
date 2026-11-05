@@ -2,8 +2,8 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { SETTINGS_COPY, type SettingsFormProps } from '@/components/settings-form-types';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing } from '@/constants/theme';
+import { Text } from '@/components/ui/text';
+import { colors, shape, space, type } from '@/theme';
 import { GENDERS } from '@/lib/settings';
 
 export type { SettingsFormProps } from '@/components/settings-form-types';
@@ -15,9 +15,9 @@ export function SettingsForm(props: SettingsFormProps) {
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
       <Pressable onPress={props.onEditPhoto} style={styles.photo} accessibilityRole="button" accessibilityLabel="Change profile picture">
         <ProfileAvatar size={96} imageUrl={props.imageUrl} name={props.name} busy={props.uploadingPhoto} />
-        <ThemedText type="smallBold" themeColor="olive">
+        <Text variant="label" color="accent">
           {props.imageUrl ? 'Edit' : 'Add Photo'}
-        </ThemedText>
+        </Text>
       </Pressable>
       <Group title="Profile" footer={SETTINGS_COPY.profileFooter}>
         <Field label="First name" value={draft.name} onChange={(name) => onChange({ name })} />
@@ -30,7 +30,7 @@ export function SettingsForm(props: SettingsFormProps) {
         <View style={styles.row}>
           {GENDERS.map((gender) => (
             <Pressable key={gender.value} onPress={() => onChange({ gender: draft.gender === gender.value ? null : gender.value })}>
-              <ThemedText themeColor={draft.gender === gender.value ? 'olive' : 'textSecondary'}>{gender.label}</ThemedText>
+              <Text color={draft.gender === gender.value ? 'accent' : 'textSecondary'}>{gender.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -59,9 +59,9 @@ export function SettingsForm(props: SettingsFormProps) {
 function Group({ title, footer, children }: { title?: string; footer?: string; children: React.ReactNode }) {
   return (
     <View style={styles.group}>
-      {title ? <ThemedText type="small" themeColor="textSecondary">{title}</ThemedText> : null}
+      {title ? <Text variant="small" color="textSecondary">{title}</Text> : null}
       <View style={styles.card}>{children}</View>
-      {footer ? <ThemedText type="small" themeColor="textSecondary">{footer}</ThemedText> : null}
+      {footer ? <Text variant="small" color="textSecondary">{footer}</Text> : null}
     </View>
   );
 }
@@ -71,7 +71,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
     <TextInput
       defaultValue={value}
       placeholder={label}
-      placeholderTextColor={Colors.textMuted}
+      placeholderTextColor={colors.textMuted}
       onChangeText={onChange}
       style={styles.input}
     />
@@ -80,17 +80,18 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
 
 function Row({ label, destructive, onPress }: { label: string; destructive?: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={styles.input}>
-      <ThemedText themeColor={destructive ? 'destructive' : 'text'}>{label}</ThemedText>
+    <Pressable onPress={onPress} style={styles.rowItem}>
+      <Text color={destructive ? 'dangerText' : 'text'}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: Spacing.four, gap: Spacing.four },
-  photo: { alignItems: 'center', gap: Spacing.two },
-  group: { gap: Spacing.two },
-  card: { backgroundColor: Colors.backgroundElement, borderRadius: 16, paddingHorizontal: Spacing.three },
-  row: { flexDirection: 'row', gap: Spacing.three, paddingVertical: Spacing.three },
-  input: { paddingVertical: Spacing.three, color: Colors.text, fontSize: 16 },
+  content: { padding: space[6], gap: space[6] },
+  photo: { alignItems: 'center', gap: space[2] },
+  group: { gap: space[2] },
+  card: { ...shape.card, backgroundColor: colors.surface, paddingHorizontal: space[4] },
+  row: { flexDirection: 'row', gap: space[4], paddingVertical: space[4] },
+  input: { ...type.body, paddingVertical: space[4], color: colors.text },
+  rowItem: { paddingVertical: space[4] },
 });

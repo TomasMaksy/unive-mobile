@@ -1,22 +1,14 @@
-import * as Haptics from "expo-haptics";
 import { Stack, useNavigation, usePreventRemove, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Alert, Platform, StyleSheet, View } from "react-native";
 
 import {
   TextFieldRegistry,
   useTextFieldValues,
 } from "@/components/native-text-field-types";
 import { SettingsForm } from "@/components/settings-form";
-import { ThemedText } from "@/components/themed-text";
-import { Colors, Spacing } from "@/constants/theme";
+import { ErrorState, Loading } from "@/components/ui";
+import { colors, haptics } from "@/theme";
 import { authClient } from "@/lib/auth-client";
 import { refreshProfileImage } from "@/lib/profile-image";
 import { useEditProfilePhoto } from "@/lib/use-edit-profile-photo";
@@ -102,7 +94,7 @@ export default function SettingsScreen() {
       setDraft(latest);
       // The name shows elsewhere too (the AI's greeting, the profile), from the session.
       authClient.$store.notify("$sessionSignal");
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       return true;
     } catch (error) {
       Alert.alert(
@@ -198,9 +190,7 @@ export default function SettingsScreen() {
                   },
               );
               authClient.$store.notify("$sessionSignal");
-              void Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-              );
+              haptics.success();
             } catch (error) {
               Alert.alert(
                 "Couldn't change your email",
@@ -219,7 +209,7 @@ export default function SettingsScreen() {
     try {
       await linkGoogleCalendar(calendarScope);
       setCalendar(await connectGoogleCalendar());
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
     } catch (error) {
       Alert.alert(
         "Couldn't link Google Calendar",
@@ -292,20 +282,9 @@ export default function SettingsScreen() {
     return (
       <View style={styles.center}>
         {loadError ? (
-          <Pressable
-            onPress={() => {
-              setLoadError(false);
-              void load();
-            }}
-            style={styles.retry}
-          >
-            <ThemedText themeColor="textSecondary">
-              Couldn’t load your settings.
-            </ThemedText>
-            <ThemedText themeColor="olive">Try again</ThemedText>
-          </Pressable>
+          <ErrorState message="Couldn’t load your settings." onRetry={load} />
         ) : (
-          <ActivityIndicator color={Colors.textSecondary} />
+          <Loading />
         )}
       </View>
     );
@@ -317,7 +296,7 @@ export default function SettingsScreen() {
         <Stack.Toolbar placement="right">
           <Stack.Toolbar.Button
             variant="prominent"
-            tintColor={Colors.olive}
+            tintColor={colors.accent}
             disabled={!canSave}
             onPress={() => void save()}
           >
@@ -357,12 +336,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   center: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.backgroundGrouped,
-  },
-  retry: {
-    alignItems: "center",
-    gap: Spacing.one,
+    backgroundColor: colors.backgroundGrouped,
   },
 });

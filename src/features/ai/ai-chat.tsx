@@ -3,7 +3,7 @@ import { DefaultChatTransport, type UIMessage } from 'ai';
 import { randomUUID } from 'expo-crypto';
 import { fetch as expoFetch } from 'expo/fetch';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -22,9 +22,8 @@ import { ChatComposer } from '@/components/chat-composer';
 import { IconButton } from '@/components/icon-button';
 import { MarkdownText } from '@/components/markdown-text';
 import { ScreenHeader } from '@/components/screen-header';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Colors, Shape, Spacing } from '@/constants/theme';
+import { Loader, Loading, Text } from '@/components/ui';
+import { alpha, colors, shape, space } from '@/theme';
 import { ChatActions } from '@/features/ai/chat-actions';
 import { authHeaders } from '@/lib/api';
 import { API_URL, authClient } from '@/lib/auth-client';
@@ -43,15 +42,15 @@ const transport = new DefaultChatTransport<UIMessage>({
   }),
 });
 
-// Unive's olive (Colors.olive), at the strength the glow under the input starts from.
 // Come back to the AI after this long and it starts a fresh chat (the old one stays in the history).
 const NEW_CHAT_AFTER_MS = 30 * 60 * 1000;
 
-const GLOW = 'rgba(111, 118, 68, 0.3)';
-const CLEAR = 'rgba(111, 118, 68, 0)';
-// Colors.background, solid and see-through, for the fades at the top and bottom.
-const BACKGROUND = 'rgba(249, 249, 247, 1)';
-const BACKGROUND_CLEAR = 'rgba(249, 249, 247, 0)';
+// Meadow (colors.accent), at the strength the glow under the input starts from.
+const GLOW = alpha('meadow', 0.3);
+const CLEAR = alpha('meadow', 0);
+// colors.background, solid and see-through, for the fades at the top and bottom.
+const BACKGROUND = alpha('paper', 1);
+const BACKGROUND_CLEAR = alpha('paper', 0);
 
 type AiChatProps = {
   /** The panel is on screen: a good moment to pick up chats started on the website. */
@@ -89,18 +88,18 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
   // Sit above the home indicator, or above the keyboard while it's open.
   // Runs on the UI thread, so it follows the keyboard smoothly.
   const composerStyle = useAnimatedStyle(() => ({
-    paddingBottom: Math.max(keyboardHeight.get(), insets.bottom) + Spacing.two,
+    paddingBottom: Math.max(keyboardHeight.get(), insets.bottom) + space[2],
   }));
   // The list ends at the keyboard; below the last message, room for the input.
   const listStyle = useAnimatedStyle(() => ({
     bottom: keyboardHeight.get(),
   }));
   const listEndStyle = useAnimatedStyle(() => ({
-    height: composerHeight + Spacing.four + Math.max(insets.bottom - keyboardHeight.get(), 0),
+    height: composerHeight + space[6] + Math.max(insets.bottom - keyboardHeight.get(), 0),
   }));
   // Messages fade out under the input rather than stopping at a hard edge.
   const bottomFadeStyle = useAnimatedStyle(() => ({
-    height: Math.max(keyboardHeight.get(), insets.bottom) + Spacing.two + composerHeight + Spacing.five,
+    height: Math.max(keyboardHeight.get(), insets.bottom) + space[2] + composerHeight + space[8],
   }));
   // The olive glow rises from just under the composer, so it rides up with the keyboard too.
   const glowStyle = useAnimatedStyle(() => ({
@@ -185,7 +184,7 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
     }
   }
 
-  // While an old chat loads, clear the screen for its spinner.
+  // While an old chat loads, clear the screen for its loader.
   const visible = useMemo(
     () => (openingChat ? [] : messages.filter((m) => m.parts.some((p) => p.type === 'text' && p.text.trim()))),
     [messages, openingChat],
@@ -197,7 +196,7 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       <Animated.FlatList
         ref={listRef}
         style={[StyleSheet.absoluteFill, listStyle]}
@@ -205,10 +204,10 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
         keyExtractor={(m) => m.id}
         contentContainerStyle={[
           styles.list,
-          { paddingTop: headerHeight + Spacing.two },
+          { paddingTop: headerHeight + space[2] },
           visible.length === 0 && styles.listEmpty,
         ]}
-        scrollIndicatorInsets={{ top: headerHeight, bottom: composerHeight + Spacing.two }}
+        scrollIndicatorInsets={{ top: headerHeight, bottom: composerHeight + space[2] }}
         // The header and input float over the list; it keeps clear of them itself.
         contentInsetAdjustmentBehavior="never"
         keyboardDismissMode="interactive"
@@ -219,9 +218,9 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
         ListEmptyComponent={
           <View style={styles.empty}>
             {openingChat ? (
-              <ActivityIndicator color={Colors.textSecondary} />
+              <Loading />
             ) : (
-              <ThemedText type="title" style={styles.greeting}>
+              <Text variant="h2" style={styles.greeting}>
                 {firstName ? (
                   <>
                     What&apos;s up <Text style={styles.name}>{firstName}</Text>?
@@ -229,7 +228,7 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
                 ) : (
                   "What's up?"
                 )}
-              </ThemedText>
+              </Text>
             )}
           </View>
         }
@@ -238,11 +237,13 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
         )}
         ListFooterComponent={
           <>
-            {status === 'submitted' && <ActivityIndicator color={Colors.textSecondary} style={styles.thinking} />}
+            {status === 'submitted' && (
+              <Loader size={20} color={colors.textMuted} accessibilityLabel="Thinking" style={styles.thinking} />
+            )}
             {error && (
-              <ThemedText type="small" themeColor="destructive" style={styles.error}>
+              <Text variant="small" color="dangerText" style={styles.error}>
                 {error.message || 'Something went wrong. Try again.'}
-              </ThemedText>
+              </Text>
             )}
             <Animated.View style={listEndStyle} />
           </>
@@ -250,7 +251,7 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
       />
 
       {/* Like Claude's and ChatGPT's apps: messages slide under the header and the input, getting fainter, instead of being cut off. */}
-      <View pointerEvents="none" style={[styles.topFade, { height: headerHeight + Spacing.four }]} />
+      <View pointerEvents="none" style={[styles.topFade, { height: headerHeight + space[6] }]} />
       <Animated.View pointerEvents="none" style={[styles.bottomFade, bottomFadeStyle]} />
 
       <GestureDetector gesture={headerGesture}>
@@ -291,7 +292,7 @@ export function AiChat({ isOpen, onClose, headerGesture, composerGesture, closin
           </View>
         </Animated.View>
       </GestureDetector>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -306,7 +307,7 @@ function Message({ message, streaming }: { message: UIMessage; streaming: boolea
   // Your messages sit in a white pill like the input, replies are formatted Markdown.
   return mine ? (
     <View style={[styles.bubble, styles.mine]}>
-      <ThemedText selectable>{text}</ThemedText>
+      <Text variant="body" selectable>{text}</Text>
     </View>
   ) : (
     <View style={styles.theirs}>
@@ -318,20 +319,21 @@ function Message({ message, streaming }: { message: UIMessage; streaming: boolea
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   list: {
-    gap: Spacing.four,
-    padding: Spacing.four,
+    gap: space[6],
+    padding: space[6],
   },
   bubble: {
-    ...Shape.bubble,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    ...shape.bubble,
+    paddingHorizontal: space[4],
+    paddingVertical: space[2],
     maxWidth: '85%',
   },
   mine: {
     alignSelf: 'flex-end',
-    backgroundColor: Colors.backgroundElement,
+    backgroundColor: colors.surface,
   },
   listEmpty: {
     flexGrow: 1,
@@ -345,17 +347,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   name: {
-    color: Colors.olive,
+    color: colors.accent,
   },
   theirs: {
     alignSelf: 'stretch',
   },
   thinking: {
     alignSelf: 'flex-start',
-    marginTop: Spacing.two,
+    marginTop: space[2],
   },
   error: {
-    marginTop: Spacing.two,
+    marginTop: space[2],
   },
   // The same olive as the pull-down gradient (ai-panel.tsx), here coming up from the bottom.
   glow: {
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
+    paddingHorizontal: space[4],
+    paddingTop: space[2],
   },
 });

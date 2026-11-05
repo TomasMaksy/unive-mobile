@@ -1,13 +1,9 @@
 import { SymbolView } from 'expo-symbols';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Text } from '@/components/ui';
+import { alpha, colors, fonts, shape, space } from '@/theme';
 import type { GuideBlock, GuideSpan } from '@/lib/guide';
-
-// Reading type for the guide: a bit larger than the app's default, with room
-// between lines, like Apple Books.
-const BODY_SIZE = 17;
-const BODY_LINE = 27;
 
 /** A lesson's content, drawn natively: paragraphs, lists, callouts and tables. */
 export function GuideBlocks({ blocks }: { blocks: GuideBlock[] }) {
@@ -29,7 +25,9 @@ function Block({ block }: { block: GuideBlock }) {
         <View style={styles.list}>
           {block.items.map((item, index) => (
             <View key={index} style={styles.item}>
-              <Text style={[styles.body, styles.marker]}>{block.ordered ? `${index + 1}.` : '•'}</Text>
+              <Text color="textSecondary" style={styles.marker}>
+                {block.ordered ? `${index + 1}.` : '•'}
+              </Text>
               <Spans spans={item} style={styles.itemText} />
             </View>
           ))}
@@ -39,8 +37,10 @@ function Block({ block }: { block: GuideBlock }) {
       return (
         <View style={[styles.note, styles.callout]}>
           <View style={styles.noteTitle}>
-            <SymbolView name="lightbulb.fill" size={16} tintColor={Colors.olive} style={styles.noteIcon} />
-            <Text style={[styles.body, styles.bold, styles.noteTitleText]}>{block.title}</Text>
+            <SymbolView name="lightbulb.fill" size={16} tintColor={colors.accent} style={styles.noteIcon} />
+            <Text variant="headline" style={styles.noteTitleText}>
+              {block.title}
+            </Text>
           </View>
           <GuideBlocks blocks={block.blocks} />
         </View>
@@ -49,8 +49,10 @@ function Block({ block }: { block: GuideBlock }) {
       return (
         <View style={[styles.note, styles.intl]}>
           <View style={styles.noteTitle}>
-            <SymbolView name="globe" size={16} tintColor={Colors.brandBlue} style={styles.noteIcon} />
-            <Text style={[styles.body, styles.bold, styles.noteTitleText]}>International note</Text>
+            <SymbolView name="globe" size={16} tintColor={colors.accent} style={styles.noteIcon} />
+            <Text variant="headline" style={styles.noteTitleText}>
+              International note
+            </Text>
           </View>
           <GuideBlocks blocks={block.blocks} />
         </View>
@@ -62,7 +64,7 @@ function Block({ block }: { block: GuideBlock }) {
           <View>
             <View style={[styles.row, styles.headerRow]}>
               {block.headers.map((header) => (
-                <Text key={header} style={[styles.cell, styles.bold]}>
+                <Text key={header} variant="callout" style={[styles.cell, styles.bold]}>
                   {header}
                 </Text>
               ))}
@@ -70,7 +72,7 @@ function Block({ block }: { block: GuideBlock }) {
             {block.rows.map((row, rowIndex) => (
               <View key={rowIndex} style={styles.row}>
                 {row.map((cell, cellIndex) => (
-                  <Text key={cellIndex} style={styles.cell}>
+                  <Text key={cellIndex} variant="callout" style={styles.cell}>
                     {cell}
                   </Text>
                 ))}
@@ -82,9 +84,9 @@ function Block({ block }: { block: GuideBlock }) {
   }
 }
 
-function Spans({ spans, style }: { spans: GuideSpan[]; style?: object }) {
+function Spans({ spans, style }: { spans: GuideSpan[]; style?: StyleProp<TextStyle> }) {
   return (
-    <Text style={[styles.body, style]} selectable>
+    <Text style={style} selectable>
       {spans.map((span, index) => (
         <Text key={index} style={[span.bold && styles.bold, span.italic && styles.italic]}>
           {span.text}
@@ -96,51 +98,42 @@ function Spans({ spans, style }: { spans: GuideSpan[]; style?: object }) {
 
 const styles = StyleSheet.create({
   blocks: {
-    gap: Spacing.three,
+    gap: space[4],
   },
-  body: {
-    fontFamily: Fonts.sans,
-    fontSize: BODY_SIZE,
-    lineHeight: BODY_LINE,
-    color: Colors.text,
-  },
-  bold: {
-    fontFamily: Fonts.sansSemiBold,
-  },
+  // eslint-disable-next-line no-restricted-syntax -- inline bold within a type step; the scale has no weight-only style
+  bold: { fontFamily: fonts.sansMedium },
   italic: {
     fontStyle: 'italic',
   },
   list: {
-    gap: Spacing.two,
+    gap: space[2],
   },
   item: {
     flexDirection: 'row',
-    gap: Spacing.two,
-    paddingLeft: Spacing.one,
+    gap: space[2],
+    paddingLeft: space[1],
   },
   marker: {
     minWidth: 16,
-    color: Colors.textSecondary,
   },
   itemText: {
     flex: 1,
   },
   note: {
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: 20,
-    borderCurve: 'continuous',
+    gap: space[2],
+    ...shape.bubble,
+    padding: space[4],
   },
   callout: {
-    backgroundColor: 'rgba(111, 118, 68, 0.09)',
+    backgroundColor: alpha('meadow', 0.09),
   },
   intl: {
-    backgroundColor: Colors.brandBlueSoft,
+    backgroundColor: colors.accentSoft,
   },
   noteTitle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: space[2],
   },
   noteIcon: {
     width: 18,
@@ -150,26 +143,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   table: {
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: Colors.backgroundElement,
+    ...shape.tile,
+    backgroundColor: colors.surface,
     overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   headerRow: {
     borderTopWidth: 0,
-    backgroundColor: Colors.backgroundSelected,
+    backgroundColor: colors.fill,
   },
   cell: {
     width: 170,
-    padding: Spacing.three - Spacing.one,
-    fontFamily: Fonts.sans,
-    fontSize: 15,
-    lineHeight: 21,
-    color: Colors.text,
+    padding: space[3],
   },
 });

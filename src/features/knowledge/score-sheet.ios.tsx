@@ -15,11 +15,10 @@ import {
   padding,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
-import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { alpha, colors, haptics } from '@/theme';
 import { formatScore, saveScore, SCORES } from '@/features/knowledge/academics';
 import type { ScoreSheetProps } from '@/features/knowledge/score-sheet-types';
 import type { Academics } from '@/lib/knowledge';
@@ -73,7 +72,7 @@ function Score({ scoreKey: key, current, onDone }: { scoreKey: keyof Academics; 
   function step(direction: 1 | -1) {
     // From an empty score, the first tap shows where it starts.
     const next = touched ? clamp(value + direction * steps.button) : steps.start;
-    void Haptics.selectionAsync();
+    haptics.tick();
     show(next);
   }
 
@@ -89,7 +88,7 @@ function Score({ scoreKey: key, current, onDone }: { scoreKey: keyof Academics; 
     setSaving(true);
     try {
       if (next !== current) await saveScore(key, next);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
       onDone();
     } catch (error) {
       Alert.alert("Couldn't save", error instanceof Error ? error.message : 'Please try again.');
@@ -102,8 +101,8 @@ function Score({ scoreKey: key, current, onDone }: { scoreKey: keyof Academics; 
   return (
       <VStack spacing={20} modifiers={[padding({ horizontal: 24, top: 28, bottom: 16 })]}>
         <VStack spacing={2}>
-          <Text modifiers={[font({ size: 17, weight: 'semibold' }), foregroundStyle(Colors.text)]}>{field.label}</Text>
-          <Text modifiers={[font({ size: 14 }), foregroundStyle(invalid ? Colors.destructive : Colors.textSecondary)]}>
+          <Text modifiers={[font({ size: 17, weight: 'semibold' }), foregroundStyle(colors.text)]}>{field.label}</Text>
+          <Text modifiers={[font({ size: 14 }), foregroundStyle(invalid ? colors.danger : colors.textSecondary)]}>
             {`From ${field.min} to ${field.max}`}
           </Text>
         </VStack>
@@ -119,7 +118,7 @@ function Score({ scoreKey: key, current, onDone }: { scoreKey: keyof Academics; 
               kerning(NUMBER_SIZE * -0.03),
               monospacedDigit(),
               multilineTextAlignment('center'),
-              foregroundStyle(invalid ? Colors.destructive : Colors.text),
+              foregroundStyle(invalid ? colors.danger : colors.text),
               keyboardType(key === 'gpa' ? 'decimal-pad' : 'numeric'),
               frame({ maxWidth: Infinity }),
             ]}
@@ -136,15 +135,15 @@ function Score({ scoreKey: key, current, onDone }: { scoreKey: keyof Academics; 
             onValueChange={(next) => {
               const rounded = clamp(next);
               // A tick for each button-sized step, not every hundredth of a GPA point.
-              if (Math.round(rounded / steps.button) !== Math.round(value / steps.button)) void Haptics.selectionAsync();
+              if (Math.round(rounded / steps.button) !== Math.round(value / steps.button)) haptics.tick();
               show(rounded);
             }}
-            modifiers={[tint(Colors.olive)]}
+            modifiers={[tint(colors.accent)]}
           />
           <HStack>
-            <Text modifiers={[font({ size: 13 }), foregroundStyle(Colors.textMuted)]}>{formatScore(key, field.min) ?? ''}</Text>
+            <Text modifiers={[font({ size: 13 }), foregroundStyle(colors.textMuted)]}>{formatScore(key, field.min) ?? ''}</Text>
             <Spacer />
-            <Text modifiers={[font({ size: 13 }), foregroundStyle(Colors.textMuted)]}>{formatScore(key, field.max) ?? ''}</Text>
+            <Text modifiers={[font({ size: 13 }), foregroundStyle(colors.textMuted)]}>{formatScore(key, field.max) ?? ''}</Text>
           </HStack>
         </VStack>
 
@@ -152,9 +151,10 @@ function Score({ scoreKey: key, current, onDone }: { scoreKey: keyof Academics; 
           <Text
             modifiers={[
               font({ size: 17, weight: 'semibold' }),
-              foregroundStyle('#ffffff'),
+              foregroundStyle(colors.textInverse),
               frame({ maxWidth: Infinity, minHeight: 52, maxHeight: 52 }),
-              background(canSave ? Colors.olive : '#b9bc9e'),
+              // Disabled is the accent at the brand's 48%.
+              background(canSave ? colors.accent : alpha('meadow', 0.48)),
               clipShape('capsule'),
             ]}>
             {saving ? 'Saving…' : 'Save'}
@@ -175,9 +175,9 @@ function StepButton({ symbol, disabled, onPress }: { symbol: 'minus' | 'plus'; d
         systemName={symbol}
         modifiers={[
           font({ size: 22, weight: 'semibold' }),
-          foregroundStyle(disabled ? Colors.textMuted : Colors.text),
+          foregroundStyle(disabled ? colors.textMuted : colors.text),
           frame({ width: STEP_SIZE, height: STEP_SIZE }),
-          background(Colors.backgroundGrouped),
+          background(colors.backgroundGrouped),
           clipShape('circle'),
         ]}
       />
