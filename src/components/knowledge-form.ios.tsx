@@ -22,12 +22,14 @@ import {
   multilineTextAlignment,
   scrollContentBackground,
   scrollDismissesKeyboard,
+  submitLabel,
   tag,
   textInputAutocapitalization,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 
 import type { KnowledgeFormProps } from '@/components/knowledge-form-types';
+import { formRow } from '@/components/native-form';
 import { NativeTextField } from '@/components/native-text-field';
 import { colors } from '@/theme';
 import { isoToDate, toYearMonth } from '@/lib/knowledge';
@@ -85,7 +87,7 @@ function FieldRow({
   switch (field.type) {
     case 'text':
       return (
-        <LabeledContent label={field.label}>
+        <LabeledContent label={field.label} modifiers={formRow}>
           <NativeText
             name={field.key}
             initial={typeof value === 'string' ? value : ''}
@@ -101,7 +103,7 @@ function FieldRow({
       );
     case 'choice':
       return (
-        <Picker label={field.label} selection={typeof value === 'string' ? value : NONE} onSelectionChange={(next: string) => onChange(next === NONE ? null : next)}>
+        <Picker label={field.label} modifiers={formRow} selection={typeof value === 'string' ? value : NONE} onSelectionChange={(next: string) => onChange(next === NONE ? null : next)}>
           {field.optional ? <Text modifiers={[tag(NONE)]}>Not set</Text> : null}
           {field.options.map((option) => (
             <Text key={option.value} modifiers={[tag(option.value)]}>
@@ -112,7 +114,7 @@ function FieldRow({
       );
     case 'activity':
       return (
-        <Picker label={field.label} selection={typeof value === 'string' ? value : NONE} onSelectionChange={(next: string) => onChange(next === NONE ? null : next)}>
+        <Picker label={field.label} modifiers={formRow} selection={typeof value === 'string' ? value : NONE} onSelectionChange={(next: string) => onChange(next === NONE ? null : next)}>
           <Text modifiers={[tag(NONE)]}>None</Text>
           {activities.map((activity) => (
             <Text key={activity.id} modifiers={[tag(activity.id)]}>
@@ -122,11 +124,11 @@ function FieldRow({
         </Picker>
       );
     case 'toggle':
-      return <Toggle label={field.label} isOn={value === true} onIsOnChange={onChange} />;
+      return <Toggle label={field.label} isOn={value === true} onIsOnChange={onChange} modifiers={formRow} />;
     case 'month':
       // Empty until you add one; a month is enough, like the website's.
       return typeof value === 'string' ? (
-        <HStack spacing={8}>
+        <HStack spacing={8} modifiers={formRow}>
           <DatePicker
             title={field.label}
             selection={isoToDate(value)}
@@ -141,7 +143,7 @@ function FieldRow({
           )}
         </HStack>
       ) : (
-        <Button onPress={() => onChange(toYearMonth(new Date()))}>
+        <Button onPress={() => onChange(toYearMonth(new Date()))} modifiers={formRow}>
           <HStack spacing={10}>
             <Image systemName="calendar.badge.plus" modifiers={[font({ size: 17 }), foregroundStyle(colors.accent)]} />
             <Text modifiers={[foregroundStyle(colors.accent)]}>{`Add ${field.label.toLowerCase()} date`}</Text>
@@ -175,10 +177,16 @@ function NativeText({
       axis={multiline ? 'vertical' : 'horizontal'}
       modifiers={[
         ...(multiline
-          ? [lineLimit({ min: 4, max: 12 })]
-          : [multilineTextAlignment('trailing'), foregroundStyle(colors.textSecondary)]),
-        ...(keyboard ? [keyboardType(keyboard), autocorrectionDisabled(), textInputAutocapitalization('never')] : []),
+          ? [...formRow, lineLimit({ min: 4, max: 12 })]
+          : [multilineTextAlignment('trailing'), foregroundStyle(colors.textSecondary), submitLabel('done')]),
+        ...(keyboard ? [keyboardType(withDoneKey(keyboard)), autocorrectionDisabled(), textInputAutocapitalization('never')] : []),
       ]}
     />
   );
+}
+
+// The number and phone pads have no return key, so the keyboard couldn't be put
+// away; this keyboard has the digits, + and . and a Done key.
+function withDoneKey(keyboard: 'email-address' | 'phone-pad' | 'decimal-pad' | 'numeric') {
+  return keyboard === 'email-address' ? keyboard : 'numbers-and-punctuation';
 }

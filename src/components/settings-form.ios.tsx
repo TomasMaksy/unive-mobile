@@ -37,6 +37,7 @@ import {
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 
+import { formRow } from '@/components/native-form';
 import { NativeTextField } from '@/components/native-text-field';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { ProfileAvatar } from '@/components/profile-avatar';
@@ -138,14 +139,14 @@ export function SettingsForm({
               displayedComponents={['date']}
               range={{ end: new Date() }}
               onDateChange={(date) => onChange({ birthDate: toIsoDate(date) })}
-              // The date's capsule is taller than text: trim the row's padding so it matches the rows around it.
-              modifiers={[listRowInsets({ top: 6, bottom: 6, leading: 20, trailing: 20 })]}
+              modifiers={formRow}
             />
           ) : (
-            <Button label="Add Birthday" onPress={() => onChange({ birthDate: DEFAULT_BIRTHDAY })} />
+            <Button label="Add Birthday" onPress={() => onChange({ birthDate: DEFAULT_BIRTHDAY })} modifiers={formRow} />
           )}
           <Picker
             label="Gender"
+            modifiers={formRow}
             selection={draft.gender ?? NO_GENDER}
             onSelectionChange={(value: string) =>
               onChange({ gender: value === NO_GENDER ? null : (value as (typeof GENDERS)[number]['value']) })
@@ -169,7 +170,7 @@ export function SettingsForm({
         </Section>
 
         <Section title="Account">
-          <Button onPress={onEditEmail}>
+          <Button onPress={onEditEmail} modifiers={formRow}>
             <HStack spacing={8}>
               <Text modifiers={[foregroundStyle(colors.text)]}>Email</Text>
               <Spacer />
@@ -178,7 +179,7 @@ export function SettingsForm({
             </HStack>
           </Button>
           {subscribed && (
-            <LabeledContent label="Plan">
+            <LabeledContent label="Plan" modifiers={formRow}>
               <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Unive Pro</Text>
             </LabeledContent>
           )}
@@ -196,32 +197,32 @@ export function SettingsForm({
             </Text>
           }>
           {calendar === null || calendarBusy ? (
-            <HStack>
+            <HStack modifiers={formRow}>
               <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Google Calendar</Text>
               <Spacer />
               <ProgressView />
             </HStack>
           ) : calendar.linked ? (
             <>
-              <LabeledContent label="Google Calendar">
+              <LabeledContent label="Google Calendar" modifiers={formRow}>
                 <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Linked</Text>
               </LabeledContent>
-              <Button role="destructive" label="Unlink Google Calendar" onPress={onUnlinkCalendar} />
+              <Button role="destructive" label="Unlink Google Calendar" onPress={onUnlinkCalendar} modifiers={formRow} />
             </>
           ) : (
-            <Button label="Link Google Calendar" systemImage="calendar.badge.plus" onPress={onLinkCalendar} />
+            <Button label="Link Google Calendar" systemImage="calendar.badge.plus" onPress={onLinkCalendar} modifiers={formRow} />
           )}
         </Section>
 
         <Section title="Knowledge & onboarding" footer={<Text>{SETTINGS_COPY.knowledgeFooter}</Text>}>
-          <Button onPress={onOpenKnowledge}>
+          <Button onPress={onOpenKnowledge} modifiers={formRow}>
             <HStack>
               <Text modifiers={[foregroundStyle(colors.text)]}>Knowledge Library</Text>
               <Spacer />
               <Chevron />
             </HStack>
           </Button>
-          <HStack>
+          <HStack modifiers={formRow}>
             <Text modifiers={[foregroundStyle(colors.textMuted)]}>Redo onboarding</Text>
             <Spacer />
             <Text modifiers={[font({ textStyle: 'subheadline' }), foregroundStyle(colors.textMuted)]}>Coming soon</Text>
@@ -230,13 +231,13 @@ export function SettingsForm({
 
         <Section footer={<Text>{SETTINGS_COPY.eraseFooter}</Text>}>
           {erasing ? (
-            <HStack>
+            <HStack modifiers={formRow}>
               <Text modifiers={[foregroundStyle(colors.textSecondary)]}>Erasing…</Text>
               <Spacer />
               <ProgressView />
             </HStack>
           ) : (
-            <Button role="destructive" label="Erase Everything" onPress={onErase} modifiers={[disabled(erasing)]} />
+            <Button role="destructive" label="Erase Everything" onPress={onErase} modifiers={[...formRow, disabled(erasing)]} />
           )}
         </Section>
       </List>
@@ -261,7 +262,7 @@ function Field({
   modifiers?: NonNullable<Parameters<typeof NativeTextField>[0]['modifiers']>;
 }) {
   return (
-    <LabeledContent label={label}>
+    <LabeledContent label={label} modifiers={formRow}>
       <NativeTextField
         name={name}
         initialText={value}
