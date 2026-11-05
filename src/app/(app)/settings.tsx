@@ -7,7 +7,7 @@ import {
   useTextFieldValues,
 } from "@/components/native-text-field-types";
 import { SettingsForm } from "@/components/settings-form";
-import { ErrorState, Loading } from "@/components/ui";
+import { ErrorState, Loading, TopFade } from "@/components/ui";
 import { colors, haptics } from "@/theme";
 import { authClient } from "@/lib/auth-client";
 import { refreshProfileImage } from "@/lib/profile-image";
@@ -329,6 +329,7 @@ export default function SettingsScreen() {
           onErase={erase}
         />
       </TextFieldRegistry>
+      <TopFade />
     </>
   );
 }

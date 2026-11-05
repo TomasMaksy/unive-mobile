@@ -15,3 +15,4 @@ export { Progress } from './progress';
 export { Skeleton, SkeletonText } from './skeleton';
 export { EmptyState, ErrorState, Loading } from './states';
 export { Text, type TextProps } from './text';
+export { TopFade } from './top-fade';

@@ -78,6 +78,7 @@ Averia is always tracked in by 3% (`serifTracking(size)`; in SwiftUI `kerning(si
 | `Skeleton` / `SkeletonText` | Placeholders shaped like the content that's coming (lists, cards). |
 | `ErrorState` / `EmptyState` | What went wrong (with Try again) / nothing here yet (with the action that adds something). |
 | `Progress` | A plain iOS progress bar in our colours: `value`, optional `label` and `showValue`, `tone` accent (default) or ink. |
+| `TopFade` | Over a SwiftUI form under the floating back button (Settings): what scrolls up fades into the page, like iOS 26's soft scroll edge. Native scroll views get this from iOS. |
 | `Wordmark` / `Mark` | The logo, drawn from the artwork. Never type "Unive" in a font as a logo. |
 
 Native controls stay native: SwiftUI forms, menus, switches, pickers, sheets and the floating glass `IconButton` are Apple's own design language, styled only through `tint` and our colours. Don't rebuild them.

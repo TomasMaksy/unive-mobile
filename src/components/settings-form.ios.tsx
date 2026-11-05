@@ -17,6 +17,7 @@ import {
 import {
   autocorrectionDisabled,
   background,
+  buttonStyle,
   disabled,
   font,
   foregroundStyle,
@@ -29,6 +30,7 @@ import {
   multilineTextAlignment,
   scrollContentBackground,
   scrollDismissesKeyboard,
+  submitLabel,
   tag,
   textContentType,
   textInputAutocapitalization,
@@ -105,7 +107,8 @@ export function SettingsForm({
                 <ProfileAvatar size={PHOTO_SIZE} imageUrl={imageUrl} name={name} busy={uploadingPhoto} />
               </PressableScale>
             </RNHostView>
-            <Button onPress={onEditPhoto}>
+            {/* Borderless, so only the word is the button: a plain one makes the whole row tappable. */}
+            <Button onPress={onEditPhoto} modifiers={[buttonStyle('borderless')]}>
               <Text modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' }), foregroundStyle(colors.accent)]}>
                 {imageUrl ? 'Edit' : 'Add Photo'}
               </Text>
@@ -135,6 +138,8 @@ export function SettingsForm({
               displayedComponents={['date']}
               range={{ end: new Date() }}
               onDateChange={(date) => onChange({ birthDate: toIsoDate(date) })}
+              // The date's capsule is taller than text: trim the row's padding so it matches the rows around it.
+              modifiers={[listRowInsets({ top: 6, bottom: 6, leading: 20, trailing: 20 })]}
             />
           ) : (
             <Button label="Add Birthday" onPress={() => onChange({ birthDate: DEFAULT_BIRTHDAY })} />
@@ -158,7 +163,8 @@ export function SettingsForm({
             value={draft.phone ?? ''}
             placeholder="+1 555 123 4567"
             onChange={(phone) => onChange({ phone })}
-            modifiers={[keyboardType('phone-pad'), textContentType('telephoneNumber')]}
+            // Not the phone pad: it has no return key, so the keyboard couldn't be put away. This one has + and a Done key.
+            modifiers={[keyboardType('numbers-and-punctuation'), textContentType('telephoneNumber')]}
           />
         </Section>
 
@@ -266,6 +272,7 @@ function Field({
           foregroundStyle(colors.textSecondary),
           autocorrectionDisabled(),
           textInputAutocapitalization('words'),
+          submitLabel('done'),
           ...modifiers,
         ]}
       />

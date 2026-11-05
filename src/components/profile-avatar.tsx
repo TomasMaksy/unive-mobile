@@ -48,7 +48,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.fill,
+    // See-through, so the circle shows on paper and on mist pages (Settings) alike.
+    backgroundColor: colors.track,
   },
   busy: {
     alignItems: 'center',
