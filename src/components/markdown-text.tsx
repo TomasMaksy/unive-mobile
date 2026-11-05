@@ -61,6 +61,8 @@ const styles = StyleSheet.create({
   },
   strong: {
     ...medium,
+    // The markdown library sets bold here; reset it so iOS keeps the Inter file instead of faking bold.
+    // eslint-disable-next-line no-restricted-syntax
     fontWeight: 'normal',
     color: colors.text,
   },

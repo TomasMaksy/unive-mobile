@@ -2,6 +2,7 @@ import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { Loader } from '@/components/ui/loader';
 import { colors, easeUnive, fonts, haptics, pressScale, shape, transition } from '@/theme';
@@ -89,8 +90,18 @@ export function Button({
   // overshoots a touch, so the label seems to turn into the loader.
   const fade = useSharedValue(0);
   const morph = useSharedValue(0);
+
+  // The loader is only mounted while it's showing (and fading out), so a
+  // screen of idle buttons carries no drawing canvases.
+  const [loaderMounted, setLoaderMounted] = useState(false);
+  if (morphing && !loaderMounted) setLoaderMounted(true);
+
   useEffect(() => {
-    fade.set(withTiming(morphing ? 1 : 0, { duration: 260, easing: easeUnive }));
+    fade.set(
+      withTiming(morphing ? 1 : 0, { duration: 260, easing: easeUnive }, (finished) => {
+        if (finished && !morphing) scheduleOnRN(setLoaderMounted, false);
+      }),
+    );
     morph.set(withTiming(morphing ? 1 : 0, { duration: 420, easing: Easing.bezier(0.3, 1.3, 0.5, 1) }));
   }, [morphing, fade, morph]);
 
@@ -149,9 +160,11 @@ export function Button({
             </>
           )}
         </Animated.View>
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.center, loaderStyle]}>
-          <Loader size={s.loader} color={v.fg} paused={!morphing} accessibilityLabel="" />
-        </Animated.View>
+        {loaderMounted && (
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.center, loaderStyle]}>
+            <Loader size={s.loader} color={v.fg} accessibilityLabel="" />
+          </Animated.View>
+        )}
       </Animated.View>
     </Pressable>
   );

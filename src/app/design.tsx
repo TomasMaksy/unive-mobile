@@ -208,9 +208,10 @@ function Gallery() {
         </Card>
       </Section>
 
-      <Section title="Progress" note="Written, not filled.">
+      <Section title="Progress" note="A plain iOS bar in the brand colours.">
         <Card style={styles.stack}>
-          <Progress value={progress} />
+          <Progress label="Loading" showValue value={progress} />
+          <Progress tone="ink" value={progress} />
           <View style={styles.row}>
             <Button label="−20" size="sm" variant="secondary" inline haptic={false} onPress={() => setProgress((p) => Math.max(0, p - 20))} />
             <Button label="+20" size="sm" variant="secondary" inline haptic={false} onPress={() => setProgress((p) => Math.min(100, p + 20))} />

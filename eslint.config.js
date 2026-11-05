@@ -25,7 +25,7 @@ const colourRules = [
   },
 ];
 
-const typeRules = ['fontSize', 'fontFamily', 'lineHeight', 'letterSpacing'].map((name) => ({
+const typeRules = ['fontSize', 'fontFamily', 'fontWeight', 'lineHeight', 'letterSpacing'].map((name) => ({
   selector: `Property[key.name='${name}']`,
   message: `Don't set ${name} in a screen. Use <Text variant="…"> or \`type.*\` from @/theme; if no step fits, the scale is missing one.`,
 }));

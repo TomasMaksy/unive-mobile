@@ -30,6 +30,8 @@ export const colors = {
   generatingPressed: palette.stoneDeep,
   /** A ghost button or plain row while pressed. */
   pressedOverlay: alpha('ink', 0.07),
+  /** A see-through track (progress bars, sliders): shows on paper, mist and white alike, like iOS's systemFill. */
+  track: alpha('ink', 0.1),
   /** Behind photos while they load. */
   placeholder: palette.dusk,
 

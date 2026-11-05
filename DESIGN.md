@@ -77,7 +77,7 @@ Averia is always tracked in by 3% (`serifTracking(size)`; in SwiftUI `kerning(si
 | `Loading` | A whole screen or section waiting, with an optional line in our voice: "Reading your essay…". |
 | `Skeleton` / `SkeletonText` | Placeholders shaped like the content that's coming (lists, cards). |
 | `ErrorState` / `EmptyState` | What went wrong (with Try again) / nothing here yet (with the action that adds something). |
-| `Progress` | Progress is written, not filled: the "ununun" ribbon up to `value`. |
+| `Progress` | A plain iOS progress bar in our colours: `value`, optional `label` and `showValue`, `tone` accent (default) or ink. |
 | `Wordmark` / `Mark` | The logo, drawn from the artwork. Never type "Unive" in a font as a logo. |
 
 Native controls stay native: SwiftUI forms, menus, switches, pickers, sheets and the floating glass `IconButton` are Apple's own design language, styled only through `tint` and our colours. Don't rebuild them.
@@ -105,7 +105,7 @@ One curve for nearly everything: `easeUnive`, cubic-bezier(0.22, 1, 0.36, 1). It
 - Haptics: `tap` (finger lands on a button), `tick` (something snapped), `thud` (a heavy thing landed), `success`, `error`.
 - Reduce Motion: loaders show the still icon, skeletons stop sweeping, entrances are skipped.
 - Animate with Reanimated's `.get()` / `.set()` on shared values, never `.value =` (the React Compiler can skip those writes).
-- A drawing that changes every frame (the loader, the progress ribbon) is drawn with **Skia** (`@shopify/react-native-skia`). Still artwork (the logo) uses `react-native-svg`. An animated SVG path makes React Native redo layout on every frame; six of them took the Design screen down to 6 fps.
+- A drawing that changes every frame (the loader) is drawn with **Skia** (`@shopify/react-native-skia`). Still artwork (the logo) uses `react-native-svg`. An animated SVG path makes React Native redo layout on every frame; six of them took the Design screen down to 6 fps.
 
 ## Screen rules
 

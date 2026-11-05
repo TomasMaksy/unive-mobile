@@ -12,7 +12,6 @@
  *
  *   flow    the icon slides along its own path, like a wave through water
  *   write   a pen writes the icon, then lifts it off again
- *   ribbon  a long wave for progress, written left to right
  */
 import geometry from './un-geometry.json';
 
@@ -84,7 +83,6 @@ function strokeDiscs(
   step: number,
   dx = 0,
   dy = 0,
-  ribbonShift = 0,
 ): string {
   'worklet';
   const len = to - from;
@@ -96,7 +94,7 @@ function strokeDiscs(
     const p = kind === 'wave' ? onWave(s) : onIcon(s);
     const r = p.r;
     if (r <= 0) continue;
-    const x = p.x + dx - ribbonShift;
+    const x = p.x + dx;
     const y = p.y + dy;
     d += `M${fmt(x - r)} ${fmt(y)}a${fmt(r)} ${fmt(r)} 0 1 0 ${fmt(2 * r)} 0a${fmt(r)} ${fmt(r)} 0 1 0 ${fmt(-2 * r)} 0`;
   }
@@ -141,27 +139,3 @@ export function iconPath(step: number): string {
   return strokeDiscs('icon', 0, ICON_LENGTH, step);
 }
 
-/**
- * Ribbon: an endless "ununun" wave for progress, `periods` long, flowing at
- * `phase`; `value` 0..1 is how much of it is written.
- */
-export function ribbonPath(value: number, phase: number, periods: number, step: number): string {
-  'worklet';
-  const s0 = (((phase % 1) + 1) % 1) * PERIOD_LENGTH;
-  const v = Math.min(1, Math.max(0, value));
-  if (v <= 0) return '';
-  return strokeDiscs('wave', s0, s0 + periods * PERIOD_LENGTH * v, step, 0, 0, (s0 / PERIOD_LENGTH) * SHIFT[0]);
-}
-
-const WAVE_TOP = Math.min(...PERIOD.map((p) => p[1] - p[2]));
-const WAVE_BOTTOM = Math.max(...PERIOD.map((p) => p[1] + p[2]));
-const WAVE_R = Math.max(...PERIOD.map((p) => p[2]));
-
-export function ribbonBox(periods: number) {
-  return {
-    x: PERIOD[0][0] - WAVE_R - 8,
-    y: WAVE_TOP - 8,
-    width: periods * SHIFT[0] + 2 * WAVE_R + 16,
-    height: WAVE_BOTTOM - WAVE_TOP + 16,
-  };
-}
